@@ -1,0 +1,27 @@
+version: '3'
+services:
+  htmltopdf:
+    container_name: htmltopdfSVC
+    image: htmltopdf:latest
+    build: .
+    ports: 
+      - "9090:80"
+    volumes:
+      - "/c/Users/Perennial/Downloads/files:/app/files"
+    restart: on-failure
+    depends_on:
+      - Redis
+    networks:
+      - pdfgen
+    environment:
+      - Address=Redis
+
+  Redis:
+    image: redis:latest
+    container_name: redis_container
+    networks:
+      - pdfgen
+
+networks:
+  pdfgen:
+    driver: bridge

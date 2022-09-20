@@ -9,7 +9,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/vatsal278/go-redis-cache v1.1.0
-	github.com/vatsal278/htmltopdfsvc v0.0.0-20220916151224-723530ea83ac
 )
 
 require (
