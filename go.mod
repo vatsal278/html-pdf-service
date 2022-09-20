@@ -4,9 +4,12 @@ go 1.18
 
 require (
 	github.com/PereRohit/util v0.0.4
+	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.7.2
 	github.com/golang/mock v1.6.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/vatsal278/go-redis-cache v1.1.0
+	github.com/vatsal278/htmltopdfsvc v0.0.0-20220916151224-723530ea83ac
 )
 
 require (
@@ -17,7 +20,6 @@ require (
 	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect

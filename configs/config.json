@@ -12,6 +12,6 @@
   },
   "cache": {
     "port": "6379",
-    "host": ""
+    "host": "Redis"
   }
 }
