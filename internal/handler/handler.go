@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
 	"net/http"
 
 	"github.com/PereRohit/util/request"
@@ -25,9 +26,9 @@ type htmlPdfService struct {
 	logic logic.HtmlPdfServiceLogicIer
 }
 
-func NewHtmlPdfService(ds datasource.DataSource) HtmlPdfServiceHandler {
+func NewHtmlPdfService(ds datasource.DataSource, ht htmlToPdf.HtmlToPdf) HtmlPdfServiceHandler {
 	svc := &htmlPdfService{
-		logic: logic.NewHtmlPdfServiceLogic(ds),
+		logic: logic.NewHtmlPdfServiceLogic(ds, ht),
 	}
 	AddHealthChecker(svc)
 	return svc

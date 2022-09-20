@@ -1,6 +1,8 @@
 package logic
 
 import (
+	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
+	"io"
 	"net/http"
 
 	"github.com/PereRohit/util/log"
@@ -15,21 +17,26 @@ import (
 type HtmlPdfServiceLogicIer interface {
 	Ping(*model.PingRequest) *respModel.Response
 	HealthCheck() bool
+	HtmlToPdf(w io.Writer, req *model.GenerateReq) *respModel.Response
+	Upload(file io.Reader) *respModel.Response
+	Replace(id string, file io.Reader) *respModel.Response
 }
 
 type htmlPdfServiceLogic struct {
-	dummyDsSvc datasource.DataSource
+	dsSvc datasource.DataSource
+	htSvc htmlToPdf.HtmlToPdf
 }
 
-func NewHtmlPdfServiceLogic(ds datasource.DataSource) HtmlPdfServiceLogicIer {
+func NewHtmlPdfServiceLogic(ds datasource.DataSource, ht htmlToPdf.HtmlToPdf) HtmlPdfServiceLogicIer {
 	return &htmlPdfServiceLogic{
-		dummyDsSvc: ds,
+		dsSvc: ds,
+		htSvc: ht,
 	}
 }
 
 func (l htmlPdfServiceLogic) Ping(req *model.PingRequest) *respModel.Response {
 	// add business logic here
-	res, err := l.dummyDsSvc.Ping(&model.PingDs{
+	res, err := l.dsSvc.Ping(&model.PingDs{
 		Data: req.Data,
 	})
 	if err != nil {
@@ -49,5 +56,21 @@ func (l htmlPdfServiceLogic) Ping(req *model.PingRequest) *respModel.Response {
 
 func (l htmlPdfServiceLogic) HealthCheck() bool {
 	// check all internal services are working fine
-	return l.dummyDsSvc.HealthCheck()
+	return l.dsSvc.HealthCheck() && l.htSvc.HealthCheck()
+
+}
+
+func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *respModel.Response {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (l htmlPdfServiceLogic) Upload(file io.Reader) *respModel.Response {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Response {
+	//TODO implement me
+	panic("implement me")
 }

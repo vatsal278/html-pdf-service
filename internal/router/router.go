@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
 	"net/http"
 
 	"github.com/PereRohit/util/constant"
@@ -36,9 +37,10 @@ func Register(svcCfg *config.SvcConfig) *mux.Router {
 }
 
 func attachHtmlPdfServiceRoutes(m *mux.Router, svcCfg *config.SvcConfig) *mux.Router {
-	dataSource := datasource.NewDummyDs(&svcCfg.DummySvc)
+	dataSource := datasource.NewRedisDs(&svcCfg.CacherSvc)
+	htmlTopdfSvc := htmlToPdf.NewWkHtmlToPdfSvc()
 
-	svc := handler.NewHtmlPdfService(dataSource)
+	svc := handler.NewHtmlPdfService(dataSource, htmlTopdfSvc)
 
 	m.HandleFunc("/ping", svc.Ping).Methods(http.MethodPost)
 
