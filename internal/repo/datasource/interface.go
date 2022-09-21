@@ -10,7 +10,7 @@ import (
 type DataSource interface {
 	HealthCheck() bool
 	Ping(*model.PingDs) (*model.DsResponse, error)
-	Get(s string) ([]byte, error)
-	Set(key string, val interface{}, exp time.Duration) error
-	Delete(key string) error
+	GetFile(s string) ([]byte, error)
+	SaveFile(key string, val interface{}, exp time.Duration) error
+	DeleteFile(key string) error
 }

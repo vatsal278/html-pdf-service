@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PereRohit/util/log"
+	"github.com/PereRohit/util/request"
+	"github.com/PereRohit/util/response"
 	"github.com/gorilla/mux"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
 	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
 	"net/http"
-
-	"github.com/PereRohit/util/request"
-	"github.com/PereRohit/util/response"
 
 	"github.com/vatsal278/html-pdf-service/internal/logic"
 	"github.com/vatsal278/html-pdf-service/internal/model"
@@ -27,16 +26,17 @@ type HtmlPdfServiceHandler interface {
 	Upload(w http.ResponseWriter, r *http.Request)
 	ConvertToPdf(w http.ResponseWriter, r *http.Request)
 	ReplaceHtml(w http.ResponseWriter, r *http.Request)
-	Health(w http.ResponseWriter, r *http.Request)
 }
 
 type htmlPdfService struct {
-	logic logic.HtmlPdfServiceLogicIer
+	logic     logic.HtmlPdfServiceLogicIer
+	maxMemory int64
 }
 
-func NewHtmlPdfService(ds datasource.DataSource, ht htmlToPdf.HtmlToPdf) HtmlPdfServiceHandler {
+func NewHtmlPdfService(ds datasource.DataSource, ht htmlToPdf.HtmlToPdf, mx int64) HtmlPdfServiceHandler {
 	svc := &htmlPdfService{
-		logic: logic.NewHtmlPdfServiceLogic(ds, ht),
+		logic:     logic.NewHtmlPdfServiceLogic(ds, ht),
+		maxMemory: mx,
 	}
 	AddHealthChecker(svc)
 	return svc
@@ -55,14 +55,7 @@ func (svc htmlPdfService) HealthCheck() (svcName string, msg string, stat bool) 
 	set = true
 	return
 }
-func (svc htmlPdfService) Health(w http.ResponseWriter, r *http.Request) {
-	_, msg, stat := svc.HealthCheck()
-	if stat != true {
-		response.ToJson(w, http.StatusNotFound, msg, nil)
-		return
-	}
-	response.ToJson(w, http.StatusOK, msg, nil)
-}
+
 func (svc htmlPdfService) Ping(w http.ResponseWriter, r *http.Request) {
 	req := &model.PingRequest{}
 
@@ -77,7 +70,7 @@ func (svc htmlPdfService) Ping(w http.ResponseWriter, r *http.Request) {
 	return
 }
 func (svc htmlPdfService) Upload(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10240) //File size to come from config
+	err := r.ParseMultipartForm(svc.maxMemory) //File size to come from config
 	if err != nil {
 		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
 		log.Error(err.Error())
@@ -98,32 +91,31 @@ func (svc htmlPdfService) ConvertToPdf(w http.ResponseWriter, r *http.Request) {
 	//we take id as a parameter from url path
 	id, ok := vars["id"]
 	if !ok {
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNotfound), nil)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNeeded), nil)
 		return
 	}
 	var data model.GenerateReq
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrReadFileFail), nil)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrDecodingData), nil)
 		log.Error(err.Error())
 		return
 	}
 	data.Id = id
 	log.Info(fmt.Sprintf("%+v", data))
-	resp := svc.logic.HtmlToPdf(w, &data)
+	svc.logic.HtmlToPdf(w, &data)
 	w.Header().Set("Content-Disposition", "attachment; filename="+data.Id+".pdf")
 	w.Header().Set("Content-Type", "application/pdf")
-	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 func (svc htmlPdfService) ReplaceHtml(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	//we take id as a parameter from url path
 	id, ok := vars["id"]
 	if !ok {
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNotfound), nil)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNeeded), nil)
 		return
 	}
-	err := r.ParseMultipartForm(10240) //File size to come from config
+	err := r.ParseMultipartForm(svc.maxMemory) //File size to come from config
 
 	if err != nil {
 		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)

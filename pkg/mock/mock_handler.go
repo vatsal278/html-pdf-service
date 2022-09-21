@@ -34,6 +34,18 @@ func (m *MockHtmlPdfServiceHandler) EXPECT() *MockHtmlPdfServiceHandlerMockRecor
 	return m.recorder
 }
 
+// ConvertToPdf mocks base method.
+func (m *MockHtmlPdfServiceHandler) ConvertToPdf(arg0 http.ResponseWriter, arg1 *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ConvertToPdf", arg0, arg1)
+}
+
+// ConvertToPdf indicates an expected call of ConvertToPdf.
+func (mr *MockHtmlPdfServiceHandlerMockRecorder) ConvertToPdf(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertToPdf", reflect.TypeOf((*MockHtmlPdfServiceHandler)(nil).ConvertToPdf), arg0, arg1)
+}
+
 // HealthCheck mocks base method.
 func (m *MockHtmlPdfServiceHandler) HealthCheck() (string, string, bool) {
 	m.ctrl.T.Helper()
@@ -60,4 +72,28 @@ func (m *MockHtmlPdfServiceHandler) Ping(arg0 http.ResponseWriter, arg1 *http.Re
 func (mr *MockHtmlPdfServiceHandlerMockRecorder) Ping(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockHtmlPdfServiceHandler)(nil).Ping), arg0, arg1)
+}
+
+// ReplaceHtml mocks base method.
+func (m *MockHtmlPdfServiceHandler) ReplaceHtml(arg0 http.ResponseWriter, arg1 *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ReplaceHtml", arg0, arg1)
+}
+
+// ReplaceHtml indicates an expected call of ReplaceHtml.
+func (mr *MockHtmlPdfServiceHandlerMockRecorder) ReplaceHtml(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceHtml", reflect.TypeOf((*MockHtmlPdfServiceHandler)(nil).ReplaceHtml), arg0, arg1)
+}
+
+// Upload mocks base method.
+func (m *MockHtmlPdfServiceHandler) Upload(arg0 http.ResponseWriter, arg1 *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Upload", arg0, arg1)
+}
+
+// Upload indicates an expected call of Upload.
+func (mr *MockHtmlPdfServiceHandlerMockRecorder) Upload(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockHtmlPdfServiceHandler)(nil).Upload), arg0, arg1)
 }

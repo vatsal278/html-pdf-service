@@ -77,7 +77,7 @@ func (l htmlPdfServiceLogic) Upload(file io.Reader) *respModel.Response {
 			Data:    nil,
 		}
 	}
-	jb, err := l.htSvc.PDFPreparer(fileBytes)
+	jb, err := l.htSvc.GetJsonFromHtml(fileBytes)
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
@@ -86,7 +86,7 @@ func (l htmlPdfServiceLogic) Upload(file io.Reader) *respModel.Response {
 		}
 	}
 	u := uuid.NewString()
-	err = l.dsSvc.Set(u, jb, 0)
+	err = l.dsSvc.SaveFile(u, jb, 0)
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{
@@ -105,7 +105,7 @@ func (l htmlPdfServiceLogic) Upload(file io.Reader) *respModel.Response {
 }
 
 func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Response {
-	_, err := l.dsSvc.Get(id)
+	_, err := l.dsSvc.GetFile(id)
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{
@@ -123,7 +123,7 @@ func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Respo
 			Data:    nil,
 		}
 	}
-	jb, err := l.htSvc.PDFPreparer(fileBytes)
+	jb, err := l.htSvc.GetJsonFromHtml(fileBytes)
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
@@ -132,7 +132,7 @@ func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Respo
 		}
 	}
 
-	err = l.dsSvc.Set(id, jb, 0)
+	err = l.dsSvc.SaveFile(id, jb, 0)
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{
@@ -142,7 +142,7 @@ func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Respo
 		}
 	}
 	return &respModel.Response{
-		Status:  http.StatusCreated,
+		Status:  http.StatusOK,
 		Message: "SUCCESS",
 		Data: map[string]interface{}{
 			"id": id,
@@ -152,7 +152,7 @@ func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Respo
 
 func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *respModel.Response {
 	var z map[string]interface{}
-	b, err := l.dsSvc.Get(req.Id)
+	b, err := l.dsSvc.GetFile(req.Id)
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{
@@ -177,7 +177,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 			log.Error("error decoding base 64 input on page" + fmt.Sprint(i) + err.Error())
 			return &respModel.Response{
 				Status:  http.StatusInternalServerError,
-				Message: codes.GetErr(codes.ErrReadFileFail),
+				Message: codes.GetErr(codes.ErrDecodingData),
 				Data:    nil,
 			}
 		}
@@ -212,7 +212,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 			Data:    nil,
 		}
 	}
-	err = l.htSvc.PDFGenerator(w, buff.Bytes())
+	err = l.htSvc.GeneratePdf(w, buff.Bytes())
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{
@@ -221,9 +221,5 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 			Data:    nil,
 		}
 	}
-	return &respModel.Response{
-		Status:  http.StatusCreated,
-		Message: "SUCCESS",
-		Data:    nil,
-	}
+	return &respModel.Response{}
 }

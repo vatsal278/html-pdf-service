@@ -40,12 +40,11 @@ func attachHtmlPdfServiceRoutes(m *mux.Router, svcCfg *config.SvcConfig) *mux.Ro
 	dataSource := datasource.NewRedisDs(&svcCfg.CacherSvc)
 	htmlTopdfSvc := htmlToPdf.NewWkHtmlToPdfSvc()
 
-	svc := handler.NewHtmlPdfService(dataSource, htmlTopdfSvc)
+	svc := handler.NewHtmlPdfService(dataSource, htmlTopdfSvc, svcCfg.MaxMemmory)
 
 	m.HandleFunc("/ping", svc.Ping).Methods(http.MethodPost)
 	m.HandleFunc("/register", svc.Upload).Methods(http.MethodPost)
 	m.HandleFunc("/generate/{id}", svc.ConvertToPdf).Methods(http.MethodPost)
 	m.HandleFunc("/register/{id}", svc.ReplaceHtml).Methods(http.MethodPut)
-	m.HandleFunc("/health", svc.Health).Methods(http.MethodGet)
 	return m
 }

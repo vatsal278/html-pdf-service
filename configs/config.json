@@ -13,5 +13,6 @@
   "cache": {
     "port": "6379",
     "host": "Redis"
-  }
+  },
+  "max_memory":"10240"
 }

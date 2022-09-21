@@ -5,6 +5,7 @@
 package mock
 
 import (
+	io "io"
 	reflect "reflect"
 
 	model "github.com/PereRohit/util/model"
@@ -49,6 +50,20 @@ func (mr *MockHtmlPdfServiceLogicIerMockRecorder) HealthCheck() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HealthCheck", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).HealthCheck))
 }
 
+// HtmlToPdf mocks base method.
+func (m *MockHtmlPdfServiceLogicIer) HtmlToPdf(arg0 io.Writer, arg1 *model0.GenerateReq) *model.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HtmlToPdf", arg0, arg1)
+	ret0, _ := ret[0].(*model.Response)
+	return ret0
+}
+
+// HtmlToPdf indicates an expected call of HtmlToPdf.
+func (mr *MockHtmlPdfServiceLogicIerMockRecorder) HtmlToPdf(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HtmlToPdf", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).HtmlToPdf), arg0, arg1)
+}
+
 // Ping mocks base method.
 func (m *MockHtmlPdfServiceLogicIer) Ping(arg0 *model0.PingRequest) *model.Response {
 	m.ctrl.T.Helper()
@@ -61,4 +76,32 @@ func (m *MockHtmlPdfServiceLogicIer) Ping(arg0 *model0.PingRequest) *model.Respo
 func (mr *MockHtmlPdfServiceLogicIerMockRecorder) Ping(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).Ping), arg0)
+}
+
+// Replace mocks base method.
+func (m *MockHtmlPdfServiceLogicIer) Replace(arg0 string, arg1 io.Reader) *model.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Replace", arg0, arg1)
+	ret0, _ := ret[0].(*model.Response)
+	return ret0
+}
+
+// Replace indicates an expected call of Replace.
+func (mr *MockHtmlPdfServiceLogicIerMockRecorder) Replace(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Replace", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).Replace), arg0, arg1)
+}
+
+// Upload mocks base method.
+func (m *MockHtmlPdfServiceLogicIer) Upload(arg0 io.Reader) *model.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Upload", arg0)
+	ret0, _ := ret[0].(*model.Response)
+	return ret0
+}
+
+// Upload indicates an expected call of Upload.
+func (mr *MockHtmlPdfServiceLogicIerMockRecorder) Upload(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).Upload), arg0)
 }

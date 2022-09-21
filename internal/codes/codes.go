@@ -17,6 +17,8 @@ const (
 	ErrKeyNotFound
 	ErrEncodingFile
 	ErrConvertingToPdf
+	ErrDecodingData
+	ErrIdNeeded
 )
 
 var errCodes = map[errCode]string{
@@ -30,6 +32,7 @@ var errCodes = map[errCode]string{
 	ErrKeyNotFound:        "unable to find this Uuid",
 	ErrEncodingFile:       "unable to json encode the data",
 	ErrConvertingToPdf:    "unable to convert to pdf format",
+	ErrIdNeeded:           "id needed",
 }
 
 func GetErr(code errCode) string {

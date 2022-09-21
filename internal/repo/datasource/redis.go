@@ -25,7 +25,7 @@ func (r redisDs) HealthCheck() bool {
 func (r redisDs) Ping(ds *model.PingDs) (*model.DsResponse, error) {
 	return &model.DsResponse{}, nil
 }
-func (r redisDs) Get(s string) ([]byte, error) {
+func (r redisDs) GetFile(s string) ([]byte, error) {
 	x := r.redisSvc.Cacher
 	val, err := x.Get(s)
 	if err != nil {
@@ -34,7 +34,7 @@ func (r redisDs) Get(s string) ([]byte, error) {
 	return val, nil
 }
 
-func (r redisDs) Set(key string, val interface{}, exp time.Duration) error {
+func (r redisDs) SaveFile(key string, val interface{}, exp time.Duration) error {
 	x := r.redisSvc.Cacher
 	err := x.Set(key, val, exp)
 	if err != nil {
@@ -42,7 +42,7 @@ func (r redisDs) Set(key string, val interface{}, exp time.Duration) error {
 	}
 	return nil
 }
-func (r redisDs) Delete(key string) error {
+func (r redisDs) DeleteFile(key string) error {
 	x := r.redisSvc.Cacher
 	err := x.Delete(key)
 	if err != nil {
