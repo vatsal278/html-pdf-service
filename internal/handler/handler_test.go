@@ -7,6 +7,8 @@ import (
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
+	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -250,26 +252,35 @@ func TestUpload(t *testing.T) {
 		validateFunc func(*httptest.ResponseRecorder)
 	}{
 		{
-			name:        "Success:: Upload",
-			requestBody: "1",
+			name: "Success:: Upload",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				b := new(bytes.Buffer)
 				y := multipart.NewWriter(b)
-				part, _ := y.CreateFormFile("file", "./Failure.html")
+				part, _ := y.CreateFormFile("file", "some-file")
+				part.Write([]byte("abc"))
 				y.Close()
-
 				r := httptest.NewRequest(http.MethodPost, "/v1/register", b)
 				r.Header.Set("Content-Type", y.FormDataContentType())
-
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-
-				mockLogicier.EXPECT().Upload(part).Times(1).Return(&respModel.Response{
-					Status:  http.StatusCreated,
-					Message: "SUCCESS",
-					Data: map[string]interface{}{
-						"id": "1",
-					},
-				})
+				mockLogicier.EXPECT().Upload(gomock.Any()).Times(1).
+					DoAndReturn(func(f io.Reader) *respModel.Response {
+						gotData, err := ioutil.ReadAll(f)
+						if err != nil {
+							t.Error(err)
+							t.FailNow()
+						}
+						diff := testutil.Diff(gotData, []byte("abc"))
+						if diff != "" {
+							t.Error(testutil.Callers(), diff)
+						}
+						return &respModel.Response{
+							Status:  http.StatusCreated,
+							Message: "SUCCESS",
+							Data: map[string]interface{}{
+								"id": "1",
+							},
+						}
+					})
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
@@ -282,25 +293,33 @@ func TestUpload(t *testing.T) {
 			},
 		},
 		{
-			name:        "Failure:: Upload:: no key found",
-			requestBody: "1",
+			name: "Failure:: Upload:: ParseMultiForm failure",
+			setupFunc: func() (*http.Request, *htmlPdfService) {
+				b := new(bytes.Buffer)
+				r := httptest.NewRequest(http.MethodPost, "/v1/register", b)
+				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
+				rec := &htmlPdfService{
+					logic: mockLogicier,
+				}
+				return r, rec
+			},
+			validateFunc: func(x *httptest.ResponseRecorder) {
+				if x.Code != http.StatusBadRequest {
+					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+			},
+		},
+		{
+			name: "Failure:: Upload:: no file found",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				b := new(bytes.Buffer)
 				y := multipart.NewWriter(b)
-				part, _ := y.CreateFormFile("file", "./Failure.html")
-				part.Write([]byte(`sample`))
+				part, _ := y.CreateFormFile("f", "some-file")
+				part.Write([]byte("abc"))
 				y.Close()
-
 				r := httptest.NewRequest(http.MethodPost, "/v1/register", b)
 				r.Header.Set("Content-Type", y.FormDataContentType())
-
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-
-				mockLogicier.EXPECT().Upload(part).Times(1).Return(&respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrFileParseFail),
-					Data:    nil,
-				})
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
@@ -356,13 +375,34 @@ func TestConvertToPdf(t *testing.T) {
 					Values: nil,
 					Id:     "1",
 				}
-				mockLogicier.EXPECT().HtmlToPdf(w, &m).Times(1).Return(&respModel.Response{})
+				mockLogicier.EXPECT().HtmlToPdf(w, &m).Times(1).
+					DoAndReturn(func(w io.Writer, req *model.GenerateReq) *respModel.Response {
+						w.Write([]byte("hello-world"))
+						return &respModel.Response{
+							Status: http.StatusOK,
+						}
+					})
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
 				return r, rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
+				if x.Code != http.StatusBadRequest {
+					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				t.Log(r)
+				diff := testutil.Diff(got, []byte("hello-world"))
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
 			},
 		},
 		{
@@ -416,49 +456,54 @@ func TestReplace(t *testing.T) {
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				b := new(bytes.Buffer)
 				y := multipart.NewWriter(b)
-				part, _ := y.CreateFormFile("file", "./Failure.html")
-				part.Write([]byte(`sample`))
+				part, _ := y.CreateFormFile("file", "some-file")
+				part.Write([]byte("abc"))
 				y.Close()
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-				mockLogicier.EXPECT().Replace("eeab68db-acf0-46af-a6de-a08f909014e9", part).Times(1).Return(&respModel.Response{
-					Status:  http.StatusOK,
-					Message: "SUCCESS",
-					Data: map[string]interface{}{
-						"id": "eeab68db-acf0-46af-a6de-a08f909014e9",
-					}})
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
-				r := httptest.NewRequest(http.MethodPut, "/v1/register/eeab68db-acf0-46af-a6de-a08f909014e9", b)
+				r := httptest.NewRequest(http.MethodPut, "/v1/register", b)
 				r.Header.Set("Content-Type", y.FormDataContentType())
 				return r, rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
-				if x.Code != http.StatusCreated {
-					t.Errorf("want %v got %v", http.StatusCreated, x)
+				if x.Code != http.StatusBadRequest {
+					t.Errorf("want %v got %v", http.StatusBadRequest, x)
 				}
 			},
 		},
 		{
-			name:        "Failure:: Replace:: no key found",
+			name:        "Failure:: Replace:: parse multipart failure",
+			requestBody: "1",
+			setupFunc: func() (*http.Request, *htmlPdfService) {
+				b := new(bytes.Buffer)
+				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
+				rec := &htmlPdfService{
+					logic: mockLogicier,
+				}
+				return httptest.NewRequest(http.MethodPut, "/v1/register/", b), rec
+			},
+			validateFunc: func(x *httptest.ResponseRecorder) {
+				if x.Code != http.StatusBadRequest {
+					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+			},
+		},
+		{
+			name:        "Failure:: Replace:: parse multipart failure",
 			requestBody: "1",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				b := new(bytes.Buffer)
 				y := multipart.NewWriter(b)
-				part, _ := y.CreateFormFile("file", "./Failure.html")
-				part.Write([]byte(`sample`))
+				part, _ := y.CreateFormFile("file", "some-file")
+				part.Write([]byte("abc"))
 				y.Close()
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-				mockLogicier.EXPECT().Replace("", part).Times(1).Return(&respModel.Response{
-					Status:  http.StatusOK,
-					Message: "SUCCESS",
-					Data: map[string]interface{}{
-						"id": "eeab68db-acf0-46af-a6de-a08f909014e9",
-					}})
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
-				return httptest.NewRequest(http.MethodPut, "/v1/register/eeab68db-acf0-46af-a6de-a08f909014e9", nil), rec
+				return httptest.NewRequest(http.MethodPut, "/v1/register/", b), rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
 				if x.Code != http.StatusBadRequest {
