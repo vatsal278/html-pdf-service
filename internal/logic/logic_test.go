@@ -1,15 +1,14 @@
 package logic
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
-	"io"
-	"io/ioutil"
-	"mime/multipart"
+	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
 	"net/http"
-	"os"
-	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
@@ -26,18 +25,18 @@ func Test_htmlPdfServiceLogic_HealthCheck(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		setup func() datasource.DataSource
+		setup func() (datasource.DataSource, htmlToPdf.HtmlToPdf)
 		want  bool
 	}{
 		{
 			name: "Success",
-			setup: func() datasource.DataSource {
+			setup: func() (datasource.DataSource, htmlToPdf.HtmlToPdf) {
 				mockDs := mock.NewMockDataSource(mockCtrl)
-
 				mockDs.EXPECT().HealthCheck().Times(1).
 					Return(true)
-
-				return mockDs
+				mockHt := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHt.EXPECT().HealthCheck().Times(1).Return(true)
+				return mockDs, mockHt
 			},
 			want: true,
 		},
@@ -62,13 +61,14 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		setup func() datasource.DataSource
+		setup func() (datasource.DataSource, htmlToPdf.HtmlToPdf)
 		give  *model.PingRequest
 		want  *respModel.Response
 	}{
 		{
 			name: "Success",
-			setup: func() datasource.DataSource {
+			setup: func() (datasource.DataSource, htmlToPdf.HtmlToPdf) {
+				mockHt := mock.NewMockHtmlToPdf(mockCtrl)
 				mockDs := mock.NewMockDataSource(mockCtrl)
 
 				mockDs.EXPECT().Ping(&model.PingDs{
@@ -78,7 +78,7 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 						Data: "pong",
 					}, nil)
 
-				return mockDs
+				return mockDs, mockHt
 			},
 			give: &model.PingRequest{
 				Data: "ping",
@@ -93,7 +93,8 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 		},
 		{
 			name: "Failure::datasource error",
-			setup: func() datasource.DataSource {
+			setup: func() (datasource.DataSource, htmlToPdf.HtmlToPdf) {
+				mockHt := mock.NewMockHtmlToPdf(mockCtrl)
 				mockDs := mock.NewMockDataSource(mockCtrl)
 
 				mockDs.EXPECT().Ping(&model.PingDs{
@@ -101,7 +102,7 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 				}).Times(1).
 					Return(nil, errors.New("ds down"))
 
-				return mockDs
+				return mockDs, mockHt
 			},
 			give: &model.PingRequest{
 				Data: "ping",
@@ -115,7 +116,8 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := NewHtmlPdfServiceLogic(tt.setup())
+			ds, ht := tt.setup()
+			rec := NewHtmlPdfServiceLogic(ds, ht)
 
 			got := rec.Ping(tt.give)
 
@@ -128,123 +130,303 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 	tests := []struct {
 		name         string
 		requestBody  string
-		setupFunc    func() multipart.File
-		validateFunc func(*model.Response)
+		setupFunc    func() *htmlPdfServiceLogic
+		validateFunc func(*respModel.Response)
 	}{
 		{
-			name:        "Success:: Update",
-			requestBody: "1",
-			setupFunc: func() multipart.File {
-				body, _ := ioutil.TempFile(".", "example")
-				return multipart.File(body)
+			name: "Success:: Update",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return([]byte("abc"), nil)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().SaveFile(gomock.Any(), []byte("abc"), time.Duration(0)).Return(nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
 			},
-			validateFunc: func(x *model.Response) {
+			validateFunc: func(x *respModel.Response) {
 				if x.Status != http.StatusCreated {
 					t.Errorf("want %v got %v", http.StatusCreated, x)
+				}
+			},
+		},
+		{
+			name: "Failure:: Update",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return(nil, errors.New(""))
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFileConversionFail) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileConversionFail), x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: Update",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return([]byte("abc"), nil)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().SaveFile(gomock.Any(), []byte("abc"), time.Duration(0)).Return(errors.New(""))
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFileStoreFail) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileStoreFail), x.Message)
 				}
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := tt.setupFunc()
-
-			x := cacher.Upload(data)
-			tt.validateFunc(x)
-		})
-	}
-
-}
-
-func TestHtmlToPdf(t *testing.T) {
-
-	os.Setenv("Address", "0.0.0.0")
-	appContainer := config.GetAppContainer()
-	cacher := NewHtmltopdfsvcLogic(appContainer)
-	tests := []struct {
-		name         string
-		requestBody  string
-		setupFunc    func() modelV.GenerateReq
-		validateFunc func(*model.Response)
-	}{
-		{
-			name:        "Success:: Htmltopdf",
-			requestBody: "1",
-			setupFunc: func() modelV.GenerateReq {
-				//body, _ := ioutil.TempFile(".", "example")
-				var data modelV.GenerateReq
-				data.Id = "ee5371c2-7200-45a1-b543-e4c5bd4c48ed"
-				return data
-			},
-			validateFunc: func(x *model.Response) {
-				if x.Status != http.StatusCreated {
-					t.Errorf("want %v got %v", http.StatusCreated, x)
-				}
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data := tt.setupFunc()
-			var w io.Writer
-			x := cacher.HtmlToPdf(w, &data)
-			tt.validateFunc(x)
+			rec := tt.setupFunc()
+			resp := rec.Upload(strings.NewReader("abc"))
+			tt.validateFunc(resp)
 		})
 	}
 
 }
 
 func TestReplace(t *testing.T) {
-	os.Setenv("Address", "0.0.0.0")
-	appContainer := config.GetAppContainer()
-	cacher := NewHtmltopdfsvcLogic(appContainer)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 	tests := []struct {
 		name         string
 		requestBody  string
-		setupFunc    func() (multipart.File, string)
-		validateFunc func(*model.Response)
+		setupFunc    func() *htmlPdfServiceLogic
+		validateFunc func(*respModel.Response)
 	}{
 		{
-			name:        "Success:: Replace",
-			requestBody: "1",
-			setupFunc: func() (multipart.File, string) {
-				body, _ := ioutil.TempFile(".", "example")
-				return multipart.File(body), "ee5371c2-7200-45a1-b543-e4c5bd4c48ed"
+			name: "Success:: Replace",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return([]byte("abc"), nil)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().SaveFile(gomock.Any(), []byte("abc"), time.Duration(0)).Return(nil)
+				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
 			},
-			validateFunc: func(x *model.Response) {
-				if x.Status != http.StatusCreated {
-					t.Errorf("want %v got %v", http.StatusCreated, x)
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusOK {
+					t.Errorf("want %v got %v", http.StatusOK, x.Status)
+				}
+				if x.Message != "SUCCESS" {
+					t.Errorf("want %v got %v", "SUCCESS", x.Message)
 				}
 			},
 		},
 		{
-			name:        "Failure:: Replace:: no key found",
-			requestBody: "1",
-			setupFunc: func() (multipart.File, string) {
-				body, _ := ioutil.TempFile(".", "example")
-				return multipart.File(body), ""
+			name: "Failure:: Replace:: get file fail",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				//mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return([]byte("abc"), nil)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile("1").Return(nil, errors.New(""))
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
 			},
-			validateFunc: func(x *model.Response) {
-				var temp *model.Response
-				if !reflect.DeepEqual(x, &model.Response{
-					Status:  http.StatusInternalServerError,
-					Message: codes.GetErr(codes.ErrKeyNotFound),
-					Data:    nil,
-				}) {
-					t.Errorf("want %v got %v", temp, x)
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrKeyNotFound) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrKeyNotFound), x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: Replace:: save file fail",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return([]byte("abc"), nil)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().SaveFile(gomock.Any(), []byte("abc"), time.Duration(0)).Return(errors.New(""))
+				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFileStoreFail) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileStoreFail), x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: Replace:: file conversion fail",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GetJsonFromHtml([]byte("abc")).Return(nil, errors.New(""))
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFileConversionFail) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileConversionFail), x.Message)
 				}
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data, id := tt.setupFunc()
+			rec := tt.setupFunc()
+			resp := rec.Replace("1", strings.NewReader("abc"))
+			tt.validateFunc(resp)
+		})
+	}
 
-			x := cacher.Replace(id, data)
-			tt.validateFunc(x)
+}
+
+func TestHtmlToPdf(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	tests := []struct {
+		name         string
+		requestBody  string
+		setupFunc    func() *htmlPdfServiceLogic
+		validateFunc func(*respModel.Response)
+	}{
+		{
+			name: "Success:: HtmlToPdf",
+			setupFunc: func() *htmlPdfServiceLogic {
+				//w := httptest.NewRecorder()
+				js, _ := json.Marshal(map[string]interface{}{"Pages": "abc"})
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(nil)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile(gomock.Any()).Return(js, nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusOK {
+					t.Errorf("want %v got %v", http.StatusOK, x.Status)
+				}
+				if x.Message != "SUCCESS" {
+					t.Errorf("want %v got %v", "SUCCESS", x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: HtmlToPdf:: get file fail",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile("1").Return(nil, errors.New(""))
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFetchingFile) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFetchingFile), x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: HtmlToPdf:: err unmarshalling json",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFileParseFail) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileParseFail), x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: HtmlToPdf:: failed to generate pdf",
+			setupFunc: func() *htmlPdfServiceLogic {
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(nil, errors.New(""))
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrFileConversionFail) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileConversionFail), x.Message)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := tt.setupFunc()
+			resp := rec.HtmlToPdf(nil, &model.GenerateReq{
+				Values: nil,
+				Id:     "1",
+			})
+			tt.validateFunc(resp)
 		})
 	}
 }
