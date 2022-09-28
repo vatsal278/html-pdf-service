@@ -102,7 +102,6 @@ func (svc htmlPdfService) ConvertToPdf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Id = id
-	log.Info(fmt.Sprintf("%+v", data))
 	svc.logic.HtmlToPdf(w, &data)
 	w.Header().Set("Content-Disposition", "attachment; filename="+data.Id+".pdf")
 	w.Header().Set("Content-Type", "application/pdf")

@@ -128,9 +128,6 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	os.Setenv("Address", "0.0.0.0")
-	appContainer := config.GetAppContainer()
-	cacher := NewHtmltopdfsvcLogic(appContainer)
 	tests := []struct {
 		name         string
 		requestBody  string

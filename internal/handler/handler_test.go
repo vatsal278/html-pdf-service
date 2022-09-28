@@ -6,6 +6,7 @@ import (
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
 	"io"
 	"io/ioutil"
@@ -290,6 +291,24 @@ func TestUpload(t *testing.T) {
 				if x.Code != http.StatusCreated {
 					t.Errorf("want %v got %v", http.StatusCreated, x)
 				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(&respModel.Response{
+					Status:  http.StatusCreated,
+					Message: "SUCCESS",
+					Data: map[string]interface{}{
+						"id": "1",
+					},
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
 			},
 		},
 		{
@@ -306,6 +325,22 @@ func TestUpload(t *testing.T) {
 			validateFunc: func(x *httptest.ResponseRecorder) {
 				if x.Code != http.StatusBadRequest {
 					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(&respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrFileSizeExceeded),
+					Data:    nil,
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
 				}
 			},
 		},
@@ -328,6 +363,22 @@ func TestUpload(t *testing.T) {
 			validateFunc: func(x *httptest.ResponseRecorder) {
 				if x.Code != http.StatusBadRequest {
 					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(&respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrFileParseFail),
+					Data:    nil,
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
 				}
 			},
 		},
@@ -369,13 +420,9 @@ func TestConvertToPdf(t *testing.T) {
 				if err != nil {
 				}
 				r := httptest.NewRequest(http.MethodPost, "/v1/generate/1", bytes.NewBuffer(b))
-				w := httptest.NewRecorder()
+				r = mux.SetURLVars(r, map[string]string{"id": "1"})
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-				m := model.GenerateReq{
-					Values: nil,
-					Id:     "1",
-				}
-				mockLogicier.EXPECT().HtmlToPdf(w, &m).Times(1).
+				mockLogicier.EXPECT().HtmlToPdf(gomock.Any(), gomock.Any()).Times(1).
 					DoAndReturn(func(w io.Writer, req *model.GenerateReq) *respModel.Response {
 						w.Write([]byte("hello-world"))
 						return &respModel.Response{
@@ -388,13 +435,12 @@ func TestConvertToPdf(t *testing.T) {
 				return r, rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
-				if x.Code != http.StatusBadRequest {
-					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				if x.Code != http.StatusOK {
+					t.Errorf("want %v got %v", http.StatusOK, x.Code)
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				t.Log(r)
 				diff := testutil.Diff(got, []byte("hello-world"))
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
@@ -406,27 +452,40 @@ func TestConvertToPdf(t *testing.T) {
 			},
 		},
 		{
-			name:        "Failure:: ConvertToPdf",
+			name:        "Failure:: ConvertToPdf: id not found",
 			requestBody: "1",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				rec := &htmlPdfService{
 					logic: nil,
 				}
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-				m := model.GenerateReq{
-					Values: nil,
-					Id:     "1",
-				}
-				w := httptest.NewRecorder()
-				mockLogicier.EXPECT().HtmlToPdf(w, &m).Times(1).Return(&respModel.Response{
+				mockLogicier.EXPECT().HtmlToPdf(gomock.Any(), gomock.Any()).Times(1).Return(&respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrFileParseFail),
+					Message: codes.GetErr(codes.ErrIdNeeded),
 					Data:    nil,
 				})
-				return httptest.NewRequest(http.MethodPost, "/v1/register", nil), rec
+				return httptest.NewRequest(http.MethodPost, "/v1/generate", nil), rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
-
+				if x.Code != http.StatusBadRequest {
+					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrIdNeeded),
+					Data:    nil,
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
 			},
 		},
 	}
@@ -460,21 +519,59 @@ func TestReplace(t *testing.T) {
 				part.Write([]byte("abc"))
 				y.Close()
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
+				mockLogicier.EXPECT().Replace(gomock.Any(), gomock.Any()).Times(1).
+					DoAndReturn(func(id string, f io.Reader) *respModel.Response {
+						gotData, err := ioutil.ReadAll(f)
+						if err != nil {
+							t.Error(err)
+							t.FailNow()
+						}
+						diff := testutil.Diff(gotData, []byte("abc"))
+						if diff != "" {
+							t.Error(testutil.Callers(), diff)
+						}
+						return &respModel.Response{
+							Status:  http.StatusOK,
+							Message: "SUCCESS",
+							Data: map[string]interface{}{
+								"id": id,
+							},
+						}
+					})
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
-				r := httptest.NewRequest(http.MethodPut, "/v1/register", b)
+				r := httptest.NewRequest(http.MethodPut, "/v1/register/1", b)
+				r = mux.SetURLVars(r, map[string]string{"id": "1"})
 				r.Header.Set("Content-Type", y.FormDataContentType())
 				return r, rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
-				if x.Code != http.StatusBadRequest {
-					t.Errorf("want %v got %v", http.StatusBadRequest, x)
+				if x.Code != http.StatusOK {
+					t.Errorf("want %v got %v", http.StatusOK, x.Code)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(&respModel.Response{
+					Status:  http.StatusOK,
+					Message: "SUCCESS",
+					Data: map[string]interface{}{
+						"id": "1",
+					},
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "\n" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
 				}
 			},
 		},
 		{
-			name:        "Failure:: Replace:: parse multipart failure",
+			name:        "Failure:: Replace:: id not found",
 			requestBody: "1",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				b := new(bytes.Buffer)
@@ -487,6 +584,22 @@ func TestReplace(t *testing.T) {
 			validateFunc: func(x *httptest.ResponseRecorder) {
 				if x.Code != http.StatusBadRequest {
 					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(&respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrIdNeeded),
+					Data:    nil,
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "\n" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
 				}
 			},
 		},
@@ -503,11 +616,29 @@ func TestReplace(t *testing.T) {
 				rec := &htmlPdfService{
 					logic: mockLogicier,
 				}
-				return httptest.NewRequest(http.MethodPut, "/v1/register/", b), rec
+				r := httptest.NewRequest(http.MethodPut, "/v1/register/", b)
+				r = mux.SetURLVars(r, map[string]string{"id": "1"})
+				return r, rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
 				if x.Code != http.StatusBadRequest {
-					t.Errorf("want %v got %v", http.StatusBadRequest, x.Code)
+					t.Errorf("want %v got %v", http.StatusBadRequest, x)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				json.Unmarshal(got, &r)
+				b, err := json.Marshal(&respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrFileSizeExceeded),
+					Data:    nil,
+				})
+				diff := testutil.Diff(got, b)
+				if diff != "\n" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
 				}
 			},
 		},
