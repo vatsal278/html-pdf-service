@@ -25,6 +25,10 @@ func TestInitSvcConfig(t *testing.T) {
 					DummyCfg: DummySvcCfg{
 						DummyCfg: "dummy cfg",
 					},
+					Cache: CacheCfg{
+						Port: "",
+						Host: "",
+					},
 				},
 			},
 			want: &SvcConfig{
@@ -34,11 +38,6 @@ func TestInitSvcConfig(t *testing.T) {
 					DummyCfg: DummySvcCfg{
 						DummyCfg: "dummy cfg",
 					},
-				},
-				ServiceRouteVersion: "v2",
-				SvrCfg:              config.ServerConfig{},
-				DummySvc: DummyInternalSvc{
-					Data: "dummy cfg",
 				},
 			},
 		},
