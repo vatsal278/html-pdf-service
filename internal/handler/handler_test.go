@@ -13,7 +13,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/vatsal278/html-pdf-service/internal/model"
@@ -289,21 +288,17 @@ func TestUpload(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(&respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusCreated,
 					Message: "SUCCESS",
 					Data: map[string]interface{}{
 						"id": "1",
 					},
 				})
-				if !reflect.DeepEqual(got, b) {
-					t.Errorf("want %v got %v", got, b)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
 				}
-				//diff := testutil.Diff(got, b)
-				//if diff != "" {
-				//	t.Error(testutil.Callers(), diff)
-				//}
-				diff := testutil.Diff(err, nil)
+				diff = testutil.Diff(err, nil)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
@@ -327,12 +322,11 @@ func TestUpload(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(&respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrFileSizeExceeded),
 					Data:    nil,
 				})
-				diff := testutil.Diff(got, b)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
@@ -365,12 +359,11 @@ func TestUpload(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(&respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrFileParseFail),
 					Data:    nil,
 				})
-				diff := testutil.Diff(got, b)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
@@ -456,12 +449,6 @@ func TestConvertToPdf(t *testing.T) {
 				rec := &htmlPdfService{
 					logic: nil,
 				}
-				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-				mockLogicier.EXPECT().HtmlToPdf(gomock.Any(), gomock.Any()).Times(1).Return(&respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrIdNeeded),
-					Data:    nil,
-				})
 				return httptest.NewRequest(http.MethodPost, "/v1/generate", nil), rec
 			},
 			validateFunc: func(x *httptest.ResponseRecorder) {
@@ -471,12 +458,11 @@ func TestConvertToPdf(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrIdNeeded),
 					Data:    nil,
 				})
-				diff := testutil.Diff(got, b)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
@@ -551,15 +537,14 @@ func TestReplace(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(&respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusOK,
 					Message: "SUCCESS",
 					Data: map[string]interface{}{
 						"id": "1",
 					},
 				})
-				diff := testutil.Diff(got, b)
-				if diff != "\n" {
+				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
 				diff = testutil.Diff(err, nil)
@@ -586,13 +571,12 @@ func TestReplace(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(&respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrIdNeeded),
 					Data:    nil,
 				})
-				diff := testutil.Diff(got, b)
-				if diff != "\n" {
+				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
 				diff = testutil.Diff(err, nil)
@@ -625,13 +609,12 @@ func TestReplace(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				json.Unmarshal(got, &r)
-				b, err := json.Marshal(&respModel.Response{
+				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrFileSizeExceeded),
 					Data:    nil,
 				})
-				diff := testutil.Diff(got, b)
-				if diff != "\n" {
+				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
 				diff = testutil.Diff(err, nil)

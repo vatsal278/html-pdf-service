@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"github.com/vatsal278/go-redis-cache"
+	"github.com/vatsal278/go-redis-cache/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,11 +29,15 @@ func TestRegister(t *testing.T) {
 		{
 			name: "Success health check",
 			setup: func() *config.SvcConfig {
-				cacher := redis.NewCacher(redis.Config{})
+				//mock cacher
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
 					DummySvc:            config.DummyInternalSvc{},
-					CacherSvc:           config.CacherSvc{Cacher: cacher},
+					CacherSvc: config.CacherSvc{Cacher: func() redis.Cacher {
+						mockCacher := mocks.NewMockCacher(mockCtrl)
+						mockCacher.EXPECT().Health().Return("", nil)
+						return mockCacher
+					}()},
 				}
 			},
 			validate: func(w http.ResponseWriter) {

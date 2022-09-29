@@ -1,6 +1,8 @@
 package logic
 
 import (
+	"encoding/base32"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
@@ -334,7 +336,16 @@ func TestHtmlToPdf(t *testing.T) {
 			name: "Success:: HtmlToPdf",
 			setupFunc: func() *htmlPdfServiceLogic {
 				//w := httptest.NewRecorder()
-				js, _ := json.Marshal(map[string]interface{}{"Pages": "abc"})
+				js, _ := json.Marshal(map[string]interface{}{
+					"Custom-Field": "hello",
+					"Pages": []interface{}{
+						"hello-world",
+						map[string]interface{}{
+							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("abc")),
+							"Custom-Data":    "world",
+						},
+					},
+				})
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
 				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(nil)
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
@@ -346,11 +357,9 @@ func TestHtmlToPdf(t *testing.T) {
 				return rec
 			},
 			validateFunc: func(x *respModel.Response) {
-				if x.Status != http.StatusOK {
-					t.Errorf("want %v got %v", http.StatusOK, x.Status)
-				}
-				if x.Message != "SUCCESS" {
-					t.Errorf("want %v got %v", "SUCCESS", x.Message)
+				expected := respModel.Response{}
+				if x.Status != expected.Status {
+					t.Errorf("want %v got %v", expected.Status, x.Status)
 				}
 			},
 		},
@@ -381,6 +390,7 @@ func TestHtmlToPdf(t *testing.T) {
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
 				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+
 				rec := &htmlPdfServiceLogic{
 					dsSvc: mockDatasource,
 					htSvc: mockHtmlsvc,
@@ -397,12 +407,21 @@ func TestHtmlToPdf(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: HtmlToPdf:: failed to generate pdf",
+			name: "Failure:: HtmlToPdf:: failed to decode base64 data",
 			setupFunc: func() *htmlPdfServiceLogic {
+				js, _ := json.Marshal(map[string]interface{}{
+					"Custom-Field": "hello",
+					"Pages": []interface{}{
+						"hello-world",
+						map[string]interface{}{
+							"Base64PageData": base32.StdEncoding.EncodeToString([]byte("abc")),
+							"Custom-Data":    "world",
+						},
+					},
+				})
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
-				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(nil, errors.New(""))
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
-				mockDatasource.EXPECT().GetFile("1").Return([]byte(""), nil)
+				mockDatasource.EXPECT().GetFile("1").Return(js, nil)
 				rec := &htmlPdfServiceLogic{
 					dsSvc: mockDatasource,
 					htSvc: mockHtmlsvc,
@@ -413,8 +432,40 @@ func TestHtmlToPdf(t *testing.T) {
 				if x.Status != http.StatusInternalServerError {
 					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
 				}
-				if x.Message != codes.GetErr(codes.ErrFileConversionFail) {
-					t.Errorf("want %v got %v", codes.GetErr(codes.ErrFileConversionFail), x.Message)
+				if x.Message != codes.GetErr(codes.ErrDecodingData) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrDecodingData), x.Message)
+				}
+			},
+		},
+		{
+			name: "Failure:: HtmlToPdf:: failed to generate pdf",
+			setupFunc: func() *htmlPdfServiceLogic {
+				js, _ := json.Marshal(map[string]interface{}{
+					"Custom-Field": "hello",
+					"Pages": []interface{}{
+						"hello-world",
+						map[string]interface{}{
+							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("abc")),
+							"Custom-Data":    "world",
+						},
+					},
+				})
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(errors.New(""))
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile("1").Return(js, nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				if x.Status != http.StatusInternalServerError {
+					t.Errorf("want %v got %v", http.StatusInternalServerError, x.Status)
+				}
+				if x.Message != codes.GetErr(codes.ErrConvertingToPdf) {
+					t.Errorf("want %v got %v", codes.GetErr(codes.ErrConvertingToPdf), x.Message)
 				}
 			},
 		},

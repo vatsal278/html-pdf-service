@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/vatsal278/go-redis-cache"
 	"testing"
 
 	"github.com/PereRohit/util/config"
@@ -29,6 +30,7 @@ func TestInitSvcConfig(t *testing.T) {
 						Port: "",
 						Host: "",
 					},
+					MaxMemory: 1000,
 				},
 			},
 			want: &SvcConfig{
@@ -38,7 +40,20 @@ func TestInitSvcConfig(t *testing.T) {
 					DummyCfg: DummySvcCfg{
 						DummyCfg: "dummy cfg",
 					},
+					Cache: CacheCfg{
+						Port: "",
+						Host: "",
+					},
+					MaxMemory: 1000,
 				},
+				ServiceRouteVersion: "v2",
+				SvrCfg:              config.ServerConfig{},
+				DummySvc:            DummyInternalSvc{},
+				CacherSvc: func() CacherSvc {
+					return CacherSvc{
+						Cacher: redis.NewCacher(redis.Config{Addr: ":"})}
+				}(),
+				MaxMemmory: 1000,
 			},
 		},
 	}

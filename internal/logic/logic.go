@@ -171,10 +171,13 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 		}
 	}
 	for i, p := range z["Pages"].([]interface{}) {
-		page := p.(map[string]interface{})
+		page, ok := p.(map[string]interface{})
+		if !ok {
+			continue
+		}
 		buf, err := base64.StdEncoding.DecodeString(page["Base64PageData"].(string))
 		if err != nil {
-			log.Error("error decoding base 64 input on page" + fmt.Sprint(i) + err.Error())
+			log.Error("error decoding base 64 input on page " + fmt.Sprint(i) + " " + err.Error())
 			return &respModel.Response{
 				Status:  http.StatusInternalServerError,
 				Message: codes.GetErr(codes.ErrDecodingData),
