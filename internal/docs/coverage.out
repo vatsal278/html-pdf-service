@@ -1,0 +1,11 @@
+mode: set
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:12.36,14.2 1 1
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:16.41,18.2 1 0
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:20.64,24.16 4 1
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:27.2,27.16 1 1
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:24.16,26.3 1 0
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:29.64,31.16 2 1
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:34.2,37.16 3 1
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:40.2,40.12 1 1
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:31.16,33.3 1 0
+github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf/wkhtmltopdf.go:37.16,39.3 1 0
