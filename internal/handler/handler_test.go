@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/vatsal278/html-pdf-service/internal/model"
@@ -217,9 +218,6 @@ func TestNewHtmlPdfService(t *testing.T) {
 					Return(false)
 				mockHt := mock.NewMockHtmlToPdf(mockCtrl)
 
-				mockHt.EXPECT().HealthCheck().Times(1).
-					Return(false)
-
 				return mockDs, mockHt
 			},
 			wantStat: false,
@@ -240,9 +238,6 @@ func TestNewHtmlPdfService(t *testing.T) {
 	}
 }
 func TestUpload(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping router behaviour integration test AddBookmarks in CI")
-	}
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -301,11 +296,14 @@ func TestUpload(t *testing.T) {
 						"id": "1",
 					},
 				})
-				diff := testutil.Diff(got, b)
-				if diff != "" {
-					t.Error(testutil.Callers(), diff)
+				if !reflect.DeepEqual(got, b) {
+					t.Errorf("want %v got %v", got, b)
 				}
-				diff = testutil.Diff(err, nil)
+				//diff := testutil.Diff(got, b)
+				//if diff != "" {
+				//	t.Error(testutil.Callers(), diff)
+				//}
+				diff := testutil.Diff(err, nil)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
