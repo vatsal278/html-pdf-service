@@ -163,19 +163,27 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 	}
 	err = json.NewDecoder(bytes.NewBuffer(b)).Decode(&z)
 	if err != nil {
-		log.Error("error unmarshaling JSON:" + err.Error())
+		log.Error("error unmarshalling JSON:" + err.Error())
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
 			Message: codes.GetErr(codes.ErrFileParseFail),
 			Data:    nil,
 		}
 	}
-	for i, p := range z["Pages"].([]interface{}) {
+	k, ok := z["Pages"].([]interface{})
+	if !ok {
+	}
+
+	for i, p := range k {
 		page, ok := p.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		buf, err := base64.StdEncoding.DecodeString(page["Base64PageData"].(string))
+		l, ok := page["Base64PageData"].(string)
+		if !ok {
+			continue
+		}
+		buf, err := base64.StdEncoding.DecodeString(l)
 		if err != nil {
 			log.Error("error decoding base 64 input on page " + fmt.Sprint(i) + " " + err.Error())
 			return &respModel.Response{
@@ -195,6 +203,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 		}
 		buffer := bytes.NewBuffer(nil)
 		err = t.Execute(buffer, req.Values)
+		//empty id failure case
 		if err != nil {
 			log.Error(err)
 			return &respModel.Response{
@@ -224,5 +233,5 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 			Data:    nil,
 		}
 	}
-	return &respModel.Response{}
+	return &respModel.Response{Status: http.StatusOK}
 }

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestHealth(t *testing.T) {
+func Test_Health(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	tests := []struct {
@@ -57,19 +57,17 @@ func TestHealth(t *testing.T) {
 
 }
 
-func TestSaveFile(t *testing.T) {
+func Test_SaveFile(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	tests := []struct {
 		name         string
-		requestBody  string
 		expiry       time.Duration
 		setupFunc    func() *mocks.MockCacher
 		validateFunc func(DataSource, string, error)
 	}{
 		{
-			name:        "Success:: Save File",
-			requestBody: "localhost:6379",
+			name: "Success:: Save File",
 			setupFunc: func() *mocks.MockCacher {
 				mockcacher := mocks.NewMockCacher(mockCtrl)
 				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -82,9 +80,8 @@ func TestSaveFile(t *testing.T) {
 			},
 		},
 		{
-			name:        "Success:: Save File:: With Expiry",
-			requestBody: "localhost:6379",
-			expiry:      2 * time.Second,
+			name:   "Success:: Save File:: With Expiry",
+			expiry: 2 * time.Second,
 			setupFunc: func() *mocks.MockCacher {
 				mockcacher := mocks.NewMockCacher(mockCtrl)
 				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), 2*time.Second).Times(1).Return(nil)
@@ -97,7 +94,7 @@ func TestSaveFile(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: Save File",
+			name: "Failure:: Save File :: err saving file",
 			setupFunc: func() *mocks.MockCacher {
 				mockcacher := mocks.NewMockCacher(mockCtrl)
 				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New(""))
@@ -122,12 +119,11 @@ func TestSaveFile(t *testing.T) {
 
 }
 
-func TestDelete(t *testing.T) {
+func Test_DeleteFile(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	tests := []struct {
 		name         string
-		requestBody  string
 		setupFunc    func() *mocks.MockCacher
 		validateFunc func(error)
 	}{
@@ -144,6 +140,19 @@ func TestDelete(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "Failure:: Delete File :: err deleting file",
+			setupFunc: func() *mocks.MockCacher {
+				mockcacher := mocks.NewMockCacher(mockCtrl)
+				mockcacher.EXPECT().Delete(gomock.Any()).Times(1).Return(errors.New(""))
+				return mockcacher
+			},
+			validateFunc: func(err error) {
+				if err == nil {
+					t.Errorf("want %v got %v", "not nil", nil)
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -157,7 +166,7 @@ func TestDelete(t *testing.T) {
 
 }
 
-func TestGet(t *testing.T) {
+func Test_GetFile(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	tests := []struct {

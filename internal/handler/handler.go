@@ -72,7 +72,7 @@ func (svc htmlPdfService) Ping(w http.ResponseWriter, r *http.Request) {
 func (svc htmlPdfService) Upload(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(svc.maxMemory) //File size to come from config
 	if err != nil {
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
+		response.ToJson(w, http.StatusBadRequest, err.Error(), nil)
 		log.Error(err.Error())
 		return
 	}
@@ -102,7 +102,12 @@ func (svc htmlPdfService) ConvertToPdf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Id = id
-	svc.logic.HtmlToPdf(w, &data)
+	resp := svc.logic.HtmlToPdf(w, &data)
+	if resp.Status != http.StatusOK {
+		response.ToJson(w, resp.Status, resp.Message, resp.Data)
+		log.Error(resp.Message)
+		return
+	}
 	w.Header().Set("Content-Disposition", "attachment; filename="+data.Id+".pdf")
 	w.Header().Set("Content-Type", "application/pdf")
 }

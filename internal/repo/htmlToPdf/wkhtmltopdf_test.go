@@ -8,6 +8,9 @@ import (
 )
 
 func TestGetJsonFromHtml(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping testing due to unavailability of testing environment")
+	}
 	htmlToPdf := NewWkHtmlToPdfSvc()
 	tests := []struct {
 		name         string
@@ -44,6 +47,9 @@ func TestGetJsonFromHtml(t *testing.T) {
 	}
 }
 func TestGeneratePdf(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping testing due to unavailability of testing environment")
+	}
 	htmlToPdf := NewWkHtmlToPdfSvc()
 	tests := []struct {
 		name         string
