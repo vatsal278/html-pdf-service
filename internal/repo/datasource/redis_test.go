@@ -97,12 +97,12 @@ func Test_SaveFile(t *testing.T) {
 			name: "Failure:: Save File :: err saving file",
 			setupFunc: func() *mocks.MockCacher {
 				mockcacher := mocks.NewMockCacher(mockCtrl)
-				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New(""))
+				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("Failed to set cache"))
 				return mockcacher
 			},
 			validateFunc: func(cacher DataSource, data string, err error) {
-				if err == nil {
-					t.Errorf("want %v got %v", "not nil", nil)
+				if err == errors.New("Failed to set cache") {
+					t.Errorf("want %v got %v", errors.New("Failed to set cache"), nil)
 				}
 			},
 		},
@@ -144,12 +144,13 @@ func Test_DeleteFile(t *testing.T) {
 			name: "Failure:: Delete File :: err deleting file",
 			setupFunc: func() *mocks.MockCacher {
 				mockcacher := mocks.NewMockCacher(mockCtrl)
-				mockcacher.EXPECT().Delete(gomock.Any()).Times(1).Return(errors.New(""))
+				mockcacher.EXPECT().Delete(gomock.Any()).Times(1).Return(errors.New("failed to delete cache"))
 				return mockcacher
 			},
 			validateFunc: func(err error) {
-				if err == nil {
-					t.Errorf("want %v got %v", "not nil", nil)
+				t.Log(err)
+				if err == errors.New("failed to delete cache") {
+					t.Errorf("want %v got %v", errors.New("failed to delete cache"), err)
 				}
 			},
 		},
@@ -197,12 +198,12 @@ func Test_GetFile(t *testing.T) {
 			requestBody: "2",
 			setupFunc: func() *mocks.MockCacher {
 				mockcacher := mocks.NewMockCacher(mockCtrl)
-				mockcacher.EXPECT().Get(gomock.Any()).Times(1).Return(nil, errors.New(""))
+				mockcacher.EXPECT().Get(gomock.Any()).Times(1).Return(nil, errors.New("Failed to get cache"))
 				return mockcacher
 			},
 			validateFunc: func(s []byte, request string, err error) {
-				if err == nil {
-					t.Errorf("want %v got %v", nil, err)
+				if err == errors.New("Failed to get cache") {
+					t.Errorf("want %v got %v", errors.New("Failed to get cache"), err)
 				}
 			},
 		},

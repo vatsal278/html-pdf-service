@@ -9,6 +9,7 @@ import (
 	"github.com/vatsal278/html-pdf-service/internal/codes"
 	"github.com/vatsal278/html-pdf-service/internal/model"
 	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/vatsal278/html-pdf-service/internal/repo/datasource"
-	"html/template"
 )
 
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/html-pdf-service/internal/logic HtmlPdfServiceLogicIer
@@ -131,7 +131,6 @@ func (l htmlPdfServiceLogic) Replace(id string, file io.Reader) *respModel.Respo
 			Data:    nil,
 		}
 	}
-
 	err = l.dsSvc.SaveFile(id, jb, 0)
 	if err != nil {
 		log.Error(err)
@@ -172,16 +171,31 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 	}
 	k, ok := z["Pages"].([]interface{})
 	if !ok {
+		log.Error("assertion for Pages failed")
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: codes.GetErr(codes.ErrDecodingData),
+			Data:    nil,
+		}
 	}
-
 	for i, p := range k {
 		page, ok := p.(map[string]interface{})
 		if !ok {
-			continue
+			log.Error("assertion for map[string]interface{} failed")
+			return &respModel.Response{
+				Status:  http.StatusBadRequest,
+				Message: codes.GetErr(codes.ErrDecodingData),
+				Data:    nil,
+			}
 		}
 		l, ok := page["Base64PageData"].(string)
 		if !ok {
-			continue
+			log.Error("assertion for Base64PageData failed")
+			return &respModel.Response{
+				Status:  http.StatusBadRequest,
+				Message: codes.GetErr(codes.ErrDecodingData),
+				Data:    nil,
+			}
 		}
 		buf, err := base64.StdEncoding.DecodeString(l)
 		if err != nil {

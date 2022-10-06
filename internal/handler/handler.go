@@ -72,7 +72,7 @@ func (svc htmlPdfService) Ping(w http.ResponseWriter, r *http.Request) {
 func (svc htmlPdfService) Upload(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(svc.maxMemory) //File size to come from config
 	if err != nil {
-		response.ToJson(w, http.StatusBadRequest, err.Error(), nil)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
 		log.Error(err.Error())
 		return
 	}

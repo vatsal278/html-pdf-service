@@ -33,6 +33,7 @@ var errCodes = map[errCode]string{
 	ErrEncodingFile:       "unable to json encode the data",
 	ErrConvertingToPdf:    "unable to convert to pdf format",
 	ErrIdNeeded:           "id needed",
+	ErrDecodingData:       "unable to decode the data",
 }
 
 func GetErr(code errCode) string {

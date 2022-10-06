@@ -293,9 +293,12 @@ func TestUpload(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Error(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusCreated,
@@ -330,9 +333,12 @@ func TestUpload(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
@@ -374,11 +380,11 @@ func TestUpload(t *testing.T) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
@@ -419,15 +425,13 @@ func TestConvertToPdf(t *testing.T) {
 			name:        "Success:: ConvertToPdf",
 			requestBody: "1",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
-				var temp struct {
-					Values struct {
-						Name  string `json:"name"`
-						Marks int    `json:"marks"`
-						ID    string `json:"id"`
-					} `json:"values"`
-				}
-				temp.Values.Name = "vatsal"
-				temp.Values.Marks = 90
+				var temp = model.GenerateReq{
+					Values: map[string]interface{}{
+						"Name":  "vatsal",
+						"Marks": "90",
+						"ID":    "1",
+					}}
+				temp.Id = "1"
 				b, err := json.Marshal(temp)
 				if err != nil {
 					t.Error(err)
@@ -436,9 +440,12 @@ func TestConvertToPdf(t *testing.T) {
 				r := httptest.NewRequest(http.MethodPost, "/v1/generate/1", bytes.NewBuffer(b))
 				r = mux.SetURLVars(r, map[string]string{"id": "1"})
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
-				mockLogicier.EXPECT().HtmlToPdf(gomock.Any(), gomock.Any()).Times(1).
+				mockLogicier.EXPECT().HtmlToPdf(gomock.Any(), &temp).Times(1).
 					DoAndReturn(func(w io.Writer, req *model.GenerateReq) *respModel.Response {
 						_, err = w.Write([]byte("hello-world"))
+						if err != nil {
+							t.Errorf(err.Error())
+						}
 						return &respModel.Response{
 							Status: http.StatusOK,
 						}
@@ -454,6 +461,13 @@ func TestConvertToPdf(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
+				if err != nil {
+					t.Error(err)
+					return
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
 					t.Error(err)
@@ -484,6 +498,9 @@ func TestConvertToPdf(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
 					t.Error(err)
@@ -520,6 +537,9 @@ func TestConvertToPdf(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
 					t.Error(err)
@@ -555,7 +575,6 @@ func TestConvertToPdf(t *testing.T) {
 				b, err := json.Marshal(temp)
 				if err != nil {
 					t.Error(err)
-					return nil, nil
 				}
 				r := httptest.NewRequest(http.MethodPost, "/v1/generate/1", bytes.NewBuffer(b))
 				r = mux.SetURLVars(r, map[string]string{"id": "1"})
@@ -577,9 +596,12 @@ func TestConvertToPdf(t *testing.T) {
 			validateFunc: func(x *httptest.ResponseRecorder) {
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusInternalServerError,
@@ -628,17 +650,15 @@ func TestReplace(t *testing.T) {
 				}
 				_, err = part.Write([]byte("abc"))
 				if err != nil {
-					return nil, nil
+					t.Errorf(err.Error())
 				}
-
 				y.Close()
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
 				mockLogicier.EXPECT().Replace(gomock.Any(), gomock.Any()).Times(1).
 					DoAndReturn(func(id string, f io.Reader) *respModel.Response {
 						gotData, err := ioutil.ReadAll(f)
 						if err != nil {
-							t.Error(err)
-							t.FailNow()
+							t.Errorf(err.Error())
 						}
 						diff := testutil.Diff(gotData, []byte("abc"))
 						if diff != "" {
@@ -666,9 +686,12 @@ func TestReplace(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusOK,
@@ -703,9 +726,12 @@ func TestReplace(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
@@ -730,7 +756,7 @@ func TestReplace(t *testing.T) {
 				part, _ := y.CreateFormFile("file", "some-file")
 				_, err := part.Write([]byte("abc"))
 				if err != nil {
-					return nil, nil
+					t.Errorf(err.Error())
 				}
 				y.Close()
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
@@ -747,13 +773,63 @@ func TestReplace(t *testing.T) {
 				}
 				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					return
+					t.Errorf(err.Error())
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrFileSizeExceeded),
+					Data:    nil,
+				})
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+				diff = testutil.Diff(err, nil)
+				if diff != "" {
+					t.Error(testutil.Callers(), diff)
+				}
+			},
+		}, {
+			name:        "Failure:: Replace:: parse multipart failure",
+			requestBody: "1",
+			setupFunc: func() (*http.Request, *htmlPdfService) {
+				b := new(bytes.Buffer)
+				y := multipart.NewWriter(b)
+				part, _ := y.CreateFormFile("f", "some-file")
+				_, err := part.Write([]byte("abc"))
+				if err != nil {
+					return nil, nil
+				}
+				y.Close()
+				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
+				rec := &htmlPdfService{
+					logic: mockLogicier,
+				}
+				r := httptest.NewRequest(http.MethodPut, "/v1/register/", b)
+				r = mux.SetURLVars(r, map[string]string{"id": "1"})
+				r.Header.Set("Content-Type", y.FormDataContentType())
+				return r, rec
+			},
+			validateFunc: func(x *httptest.ResponseRecorder) {
+				if x.Code != http.StatusBadRequest {
+					t.Errorf("want %v got %v", http.StatusBadRequest, x)
+				}
+				var r respModel.Response
+				got, err := io.ReadAll(x.Body)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
+				err = json.Unmarshal(got, &r)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
+				diff := testutil.Diff(r, respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrFileParseFail),
 					Data:    nil,
 				})
 				if diff != "" {

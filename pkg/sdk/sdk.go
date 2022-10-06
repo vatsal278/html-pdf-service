@@ -96,6 +96,10 @@ func (h *htmlToPdfSvc) Replace(filePath string, id string) error {
 		return err
 	}
 	_, err = io.Copy(part, file)
+	if err != nil {
+		return err
+	}
+	contType := writer.FormDataContentType()
 	err = writer.Close()
 	if err != nil {
 		return err
@@ -108,6 +112,7 @@ func (h *htmlToPdfSvc) Replace(filePath string, id string) error {
 		log.Error(err)
 		return err
 	}
+	r.Header.Set("Content-Type", contType)
 	r = mux.SetURLVars(r, map[string]string{"id": id})
 	resp, err := client.Do(r)
 	if err != nil {
