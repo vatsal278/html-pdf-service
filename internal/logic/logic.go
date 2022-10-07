@@ -190,12 +190,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 		}
 		l, ok := page["Base64PageData"].(string)
 		if !ok {
-			log.Error("assertion for Base64PageData failed")
-			return &respModel.Response{
-				Status:  http.StatusBadRequest,
-				Message: codes.GetErr(codes.ErrDecodingData),
-				Data:    nil,
-			}
+			continue
 		}
 		buf, err := base64.StdEncoding.DecodeString(l)
 		if err != nil {
@@ -206,6 +201,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 				Data:    nil,
 			}
 		}
+		log.Error(fmt.Sprintf("%+v", *req))
 		t, err := template.New(req.Id).Parse(string(buf))
 		if err != nil {
 			log.Error(err)

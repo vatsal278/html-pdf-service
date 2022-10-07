@@ -55,7 +55,6 @@ func (svc htmlPdfService) HealthCheck() (svcName string, msg string, stat bool) 
 	set = true
 	return
 }
-
 func (svc htmlPdfService) Ping(w http.ResponseWriter, r *http.Request) {
 	req := &model.PingRequest{}
 

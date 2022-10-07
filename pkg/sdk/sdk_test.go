@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/PereRohit/util/log"
 	"github.com/PereRohit/util/model"
@@ -12,12 +13,14 @@ import (
 	modelV "github.com/vatsal278/html-pdf-service/internal/model"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"reflect"
 	"testing"
 )
 
-func testServer(url string, f func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
+func testServer(url string, method string, f func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
 	router := mux.NewRouter()
-	router.HandleFunc(url, f).Methods(http.MethodPost)
+	router.HandleFunc(url, f).Methods(method)
 	svr := httptest.NewServer(router)
 	return svr
 }
@@ -34,9 +37,9 @@ func Test_Register(t *testing.T) {
 	}{
 		{
 			name:     "Success:: Register",
-			filePath: "./../../test/Failure.html",
+			filePath: "./../../docs/Failure.html",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
@@ -61,7 +64,6 @@ func Test_Register(t *testing.T) {
 				if err != nil {
 					t.Errorf("Want: %v, Got: %v", nil, err.Error())
 				}
-				log.Error(err)
 				if id != "1" {
 					t.Errorf("Want: %v, Got: %v", "not nil", "")
 				}
@@ -71,44 +73,10 @@ func Test_Register(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Register :: incorrect path",
-			filePath: "",
-			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register", func(w http.ResponseWriter, r *http.Request) {
-					err := r.ParseMultipartForm(10000) //File size to come from config
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
-						log.Error(err.Error())
-						return
-					}
-					file, _, err := r.FormFile("file")
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileParseFail), nil)
-						log.Error(err.Error())
-						return
-					}
-					defer file.Close()
-
-					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
-						"id": gomock.Any(),
-					})
-				})
-				return svr
-			},
-			ValidateFunc: func(id string, err error) {
-				if err.Error() != "open : The system cannot find the file specified." {
-					t.Errorf("Want: %v, Got: %v", "open : The system cannot find the file specified.", err.Error())
-				}
-			},
-			cleanupFunc: func(svr *httptest.Server) {
-				svr.Close()
-			},
-		},
-		{
 			name:     "Failure:: Register :: incorrect status code received",
-			filePath: "./../../test/Failure.html",
+			filePath: "./../../docs/Failure.html",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusBadRequest, "Failure", nil)
 				})
 				return svr
@@ -126,7 +94,7 @@ func Test_Register(t *testing.T) {
 			name:     "Failure:: Register :: incorrect test server path", //doubt
 			filePath: "./../../go.mod",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("new", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("new", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusCreated, "SUCCESS", nil)
 				})
 				return svr
@@ -147,7 +115,8 @@ func Test_Register(t *testing.T) {
 			defer tt.cleanupFunc(svr)
 
 			calls := NewHtmlToPdfSvc(svr.URL)
-			id, err := calls.Register(tt.filePath)
+			fileBytes, _ := os.ReadFile(tt.filePath)
+			id, err := calls.Register(fileBytes)
 
 			tt.ValidateFunc(id, err)
 		})
@@ -167,9 +136,9 @@ func Test_Replace(t *testing.T) {
 		{
 			name:     "Success:: Replace",
 			id:       "1",
-			filePath: "./../../test/Failure.html",
+			filePath: "./../../docs/Failure.html",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register/1", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/register/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					vars := mux.Vars(r)
 					id, ok := vars["id"]
 					if !ok {
@@ -190,7 +159,7 @@ func Test_Replace(t *testing.T) {
 					}
 					defer file.Close()
 
-					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
+					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
 						"id": id,
 					})
 				})
@@ -206,44 +175,10 @@ func Test_Replace(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Register :: incorrect path",
-			filePath: "",
+			name:     "Failure:: Replace :: incorrect status code",
+			filePath: "./../../docs/Failure.html",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register", func(w http.ResponseWriter, r *http.Request) {
-					err := r.ParseMultipartForm(10000) //File size to come from config
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
-						log.Error(err.Error())
-						return
-					}
-					file, _, err := r.FormFile("file")
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileParseFail), nil)
-						log.Error(err.Error())
-						return
-					}
-					defer file.Close()
-
-					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
-						"id": gomock.Any(),
-					})
-				})
-				return svr
-			},
-			ValidateFunc: func(err error) {
-				if err.Error() != "open : The system cannot find the file specified." {
-					t.Errorf("Want: %v, Got: %v", "open : The system cannot find the file specified.", err.Error())
-				}
-			},
-			cleanupFunc: func(svr *httptest.Server) {
-				svr.Close()
-			},
-		},
-		{
-			name:     "Failure:: Register :: incorrect status code",
-			filePath: "./../../test/Failure.html",
-			setupFunc: func() *httptest.Server {
-				svr := testServer("", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
@@ -274,10 +209,10 @@ func Test_Replace(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Register :: incorrect file type", //doubt
-			filePath: "./../../test/Failure.html",
+			name:     "Failure:: Replace :: incorrect file type", //doubt
+			filePath: "./../../Dockerfile",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/register{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
@@ -299,8 +234,8 @@ func Test_Replace(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if err.Error() != "unable to parse response data" {
-					t.Errorf("Want: %v, Got: %v", "unable to parse response data", err.Error())
+				if err.Error() != "non success status code received : 404" {
+					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -314,7 +249,9 @@ func Test_Replace(t *testing.T) {
 			defer tt.cleanupFunc(svr)
 
 			calls := NewHtmlToPdfSvc(svr.URL)
-			err := calls.Replace(tt.filePath, tt.id)
+			fileBytes, err := os.ReadFile(tt.filePath)
+
+			err = calls.Replace(fileBytes, tt.id)
 
 			tt.ValidateFunc(err)
 		})
@@ -333,9 +270,10 @@ func Test_GeneratePdf(t *testing.T) {
 	}{
 		{
 			name: "Success:: GeneratePdf",
+			id:   "1",
 			data: map[string]interface{}{"id": "1"},
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/generate/{id}", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					vars := mux.Vars(r)
 					//we take id as a parameter from url path
 					id, ok := vars["id"]
@@ -368,9 +306,9 @@ func Test_GeneratePdf(t *testing.T) {
 		{
 			name: "Failure:: GeneratePdf :: id required",
 			id:   "",
-			data: map[string]interface{}{},
+			data: map[string]interface{}{"id": "1"},
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/generate/{id}", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/generate/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					vars := mux.Vars(r)
 					//we take id as a parameter from url path
 					id, ok := vars["id"]
@@ -393,8 +331,8 @@ func Test_GeneratePdf(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if err.Error() != "open : The system cannot find the file specified." {
-					t.Errorf("Want: %v, Got: %v", "open : The system cannot find the file specified.", err.Error())
+				if err.Error() != errors.New("non success status code received : 404").Error() {
+					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err)
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -406,7 +344,7 @@ func Test_GeneratePdf(t *testing.T) {
 			id:   "1",
 			data: map[string]interface{}{"id": "1"},
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/generate/{id}", func(w http.ResponseWriter, r *http.Request) {
+				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					vars := mux.Vars(r)
 					//we take id as a parameter from url path
 					id, ok := vars["id"]
@@ -424,13 +362,13 @@ func Test_GeneratePdf(t *testing.T) {
 					}
 					data.Id = id
 
-					response.ToJson(w, http.StatusOK, "", nil)
+					response.ToJson(w, http.StatusNotFound, "", nil)
 				})
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if err.Error() != "non success status code received : 404" {
-					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err.Error())
+				if !reflect.DeepEqual(err.Error(), errors.New("non success status code received : 404").Error()) {
+					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err)
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {

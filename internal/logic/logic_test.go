@@ -24,6 +24,12 @@ import (
 	"github.com/vatsal278/html-pdf-service/pkg/mock"
 )
 
+type Reader string
+
+func (Reader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("test error")
+}
+
 func Test_htmlPdfServiceLogic_HealthCheck(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -134,11 +140,6 @@ func Test_htmlPdfServiceLogic_Ping(t *testing.T) {
 	}
 }
 
-type Reader string
-
-func (Reader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("test error")
-}
 func Test_Upload(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -426,6 +427,9 @@ func Test_HtmlToPdf(t *testing.T) {
 						map[string]interface{}{
 							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("abc")),
 						},
+						map[string]interface{}{
+							"Base64PageData": nil,
+						},
 					},
 				})
 				var a uint8
@@ -541,7 +545,11 @@ func Test_HtmlToPdf(t *testing.T) {
 						},
 					},
 				})
+				var a uint8
+				a = 10
+				js = append(js, a)
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), js).Return(errors.New("Base64PageData is empty")).Times(1)
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
 				mockDatasource.EXPECT().GetFile("1").Return(js, nil)
 				rec := &htmlPdfServiceLogic{
@@ -552,8 +560,8 @@ func Test_HtmlToPdf(t *testing.T) {
 			},
 			validateFunc: func(x *respModel.Response) {
 				expected := respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrDecodingData),
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrConvertingToPdf),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(x, &expected) {
@@ -623,15 +631,13 @@ func Test_HtmlToPdf(t *testing.T) {
 			},
 		},
 		{
-			name:        "Failure:: HtmlToPdf:: template", //PR COMMENT DOUBT
-			requestBody: "",
+			name:        "Failure:: HtmlToPdf:: failed to create new template ",
+			requestBody: "1",
 			setupFunc: func() *htmlPdfServiceLogic {
 				js, err := json.Marshal(map[string]interface{}{
 					"Pages": []interface{}{
-						"hello-world",
 						map[string]interface{}{
-							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("abc")),
-							"Custom-Data":    "world",
+							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("{{ if le .Marks  50 }}")),
 						},
 					},
 				})
@@ -650,7 +656,41 @@ func Test_HtmlToPdf(t *testing.T) {
 			validateFunc: func(x *respModel.Response) {
 				expected := respModel.Response{
 					Status:  http.StatusInternalServerError,
-					Message: codes.GetErr(codes.ErrDecodingData),
+					Message: codes.GetErr(codes.ErrFileParseFail),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(x, &expected) {
+					t.Errorf("want %v got %v", expected, x)
+				}
+			},
+		},
+		{
+			name:        "Failure:: HtmlToPdf:: failed to execute template ",
+			requestBody: "1",
+			setupFunc: func() *htmlPdfServiceLogic {
+				js, err := json.Marshal(map[string]interface{}{
+					"Pages": []interface{}{
+						map[string]interface{}{
+							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("{{ if le .Marks  50 }}{{ end }}")),
+						},
+					},
+				})
+				if err != nil {
+					log.Error(err.Error())
+				}
+				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
+				mockDatasource := mock.NewMockDataSource(mockCtrl)
+				mockDatasource.EXPECT().GetFile(gomock.Any()).Return(js, nil)
+				rec := &htmlPdfServiceLogic{
+					dsSvc: mockDatasource,
+					htSvc: mockHtmlsvc,
+				}
+				return rec
+			},
+			validateFunc: func(x *respModel.Response) {
+				expected := respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrFileStoreFail),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(x, &expected) {

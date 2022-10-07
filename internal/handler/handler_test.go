@@ -342,7 +342,7 @@ func TestUpload(t *testing.T) {
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: "request Content-Type isn't multipart/form-data",
+					Message: codes.GetErr(codes.ErrFileSizeExceeded),
 					Data:    nil,
 				})
 				if diff != "" {
@@ -430,8 +430,9 @@ func TestConvertToPdf(t *testing.T) {
 						"Name":  "vatsal",
 						"Marks": "90",
 						"ID":    "1",
-					}}
-				temp.Id = "1"
+					},
+					Id: "1",
+				}
 				b, err := json.Marshal(temp)
 				if err != nil {
 					t.Error(err)
@@ -459,19 +460,9 @@ func TestConvertToPdf(t *testing.T) {
 				if x.Code != http.StatusOK {
 					t.Errorf("want %v got %v", http.StatusOK, x.Code)
 				}
-				var r respModel.Response
 				got, err := io.ReadAll(x.Body)
 				if err != nil {
 					t.Errorf(err.Error())
-				}
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				err = json.Unmarshal(got, &r)
-				if err != nil {
-					t.Error(err)
-					return
 				}
 				diff := testutil.Diff(got, []byte("hello-world"))
 				if diff != "" {
@@ -581,7 +572,6 @@ func TestConvertToPdf(t *testing.T) {
 				mockLogicier := mock.NewMockHtmlPdfServiceLogicIer(mockCtrl)
 				mockLogicier.EXPECT().HtmlToPdf(gomock.Any(), gomock.Any()).Times(1).
 					DoAndReturn(func(w io.Writer, req *model.GenerateReq) *respModel.Response {
-						_, err = w.Write([]byte("hello-world"))
 						return &respModel.Response{
 							Status:  http.StatusInternalServerError,
 							Message: codes.GetErr(codes.ErrConvertingToPdf),
@@ -601,16 +591,14 @@ func TestConvertToPdf(t *testing.T) {
 				}
 				err = json.Unmarshal(got, &r)
 				if err != nil {
-					t.Errorf(err.Error())
+					t.Error(err)
+					return
 				}
 				diff := testutil.Diff(r, respModel.Response{
 					Status:  http.StatusInternalServerError,
 					Message: codes.GetErr(codes.ErrConvertingToPdf),
 					Data:    nil,
 				})
-				if diff != "" {
-					t.Error(testutil.Callers(), diff)
-				}
 				diff = testutil.Diff(err, nil)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)

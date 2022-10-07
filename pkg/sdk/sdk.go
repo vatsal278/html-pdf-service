@@ -12,8 +12,6 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -28,29 +26,23 @@ func NewHtmlToPdfSvc(url string) HtmlToPdfSvcI {
 }
 
 type HtmlToPdfSvcI interface {
-	Register(string) (string, error)
-	Replace(string, string) error
+	Register([]byte) (string, error)
+	Replace([]byte, string) error
 	GeneratePdf(map[string]interface{}, string) ([]byte, error)
 }
 
-func (h *htmlToPdfSvc) Register(filePath string) (string, error) {
+func (h *htmlToPdfSvc) Register(fileBytes []byte) (string, error) {
+	//take in the slice of bytes so that you can pass it directly to io.copy
 	//take io.reader as argument
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+	file := bytes.NewReader(fileBytes)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
+	part, err := writer.CreateFormFile("file", "output")
 	if err != nil {
 		return "", err
 	}
 	_, err = io.Copy(part, file)
-	err = writer.Close()
-	if err != nil {
-		return "", err
-	}
+	writer.Close()
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -63,7 +55,6 @@ func (h *htmlToPdfSvc) Register(filePath string) (string, error) {
 	if r.StatusCode < 200 || r.StatusCode > 299 {
 		return "", fmt.Errorf("non success status code received : %v", r.StatusCode)
 	}
-	//parse id and return the id
 	resp, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return "", err
@@ -82,16 +73,12 @@ func (h *htmlToPdfSvc) Register(filePath string) (string, error) {
 	return fmt.Sprint(m["id"]), err
 }
 
-func (h *htmlToPdfSvc) Replace(filePath string, id string) error {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
+func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {
+	//take in the slice of bytes so that you can pass it directly to io.copy
+	file := bytes.NewReader(fileBytes)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
+	part, err := writer.CreateFormFile("file", "output")
 	if err != nil {
 		return err
 	}
