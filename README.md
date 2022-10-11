@@ -72,9 +72,9 @@ Generates a UUID for the file. Use this UUID to generate PDF files using this te
 
 ```json
 {
-    "values": { // key-value pairs for the placeholders used in the template
+    "values": { `key-value pairs for the placeholders used in the template`
         "placeholder-1": "value",
-        "placeholder-2": value,
+        "placeholder-2": `value`,
     }
 }
 ```
