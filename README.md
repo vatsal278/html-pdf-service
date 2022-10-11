@@ -1,30 +1,27 @@
-# HTML to PDF File Service
-The service aims to provide the feature of generating a PDF file from a HTML template using [wkhtmltopdf](https://wkhtmltopdf.org/ "wkhtmltopdf").
+# HtmlPdfService
 
-This provides a RESTful service that allows for a HTML template file to be uploaded, which in turn can be used for subsequent calls to generate a PDF out of this.
+[![Build](https://github.com/vatsal278/html-pdf-service/actions/workflows/build.yml/badge.svg)](https://github.com/vatsal278/html-pdf-service/actions/workflows/build.yml) [![Test Cases](https://github.com/vatsal278/html-pdf-service/actions/workflows/test.yml/badge.svg)](https://github.com/vatsal278/html-pdf-service/actions/workflows/test.yml) [![Codecov](https://codecov.io/gh/vatsal278/html-pdf-service/branch/main/graph/badge.svg)](https://codecov.io/gh/vatsal278/html-pdf-service)
 
-The entire service is written in pure [Go](https://go.dev/ "Go") and makes use of Gos [template feature](https://www.practical-go-lessons.com/chap-32-templates "template feature").
+* This service was created using Golang. This service functions conversion of a HTML template.
+* This utilises "github.com/SebastiaanKlippert/go-wkhtmltopdf" service for converting html file to pdf file.
+* This service has used clean code principle and appropriate go directory structure.
+* This service is completely unit tested and all the errors have been handled
 
-Internally this service uses [Redis](https://redis.io/ "Redis") to store the HTML template during registration for retrieval when generating the PDF file.
-
-### API Specification
-- The response structure will always be as follows:
-```json
-
-{
-    "status": <HTTP Status code>,
-    "message": "<SOME MESSAGE>",
-    "data": <object containing information for the request>
-}
+## Starting the html-pdf-service
 
 ```
+docker compose up
+```
+## API Spec
+
+You can test the api using post man, just import the [collection](./docs/html-to-pdf-svc.postman_collection.json) into your postman app.
+
 <table>
     <th>Path</th>
     <th>HTTP Method</th>
     <th>Request</th>
     <th>Response</th>
     <th>Description</th>
-    <th>Comments</th>
 <tr>
 <td>
 
@@ -56,15 +53,6 @@ HTML template file
 <td>
 Generates a UUID for the file. Use this UUID to generate PDF files using this template.
 </td>
-<td>
-
-- [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier "UUID")
-
-- [Go UUID library](https://github.com/google/uuid "Go UUID library")
-
-- [Go HTML Template](https://www.practical-go-lessons.com/chap-32-templates "Go HTML Template")
-
-</td>
 </tr>
 <tr>
 <td>
@@ -84,9 +72,9 @@ Generates a UUID for the file. Use this UUID to generate PDF files using this te
 
 ```json
 {
-    "values": { // key-value pairs for the placeholders used in the template
+    "values": { `key-value pairs for the placeholders used in the template`
         "placeholder-1": "value",
-        "placeholder-2": value,
+        "placeholder-2": `value`,
     }
 }
 ```
@@ -99,7 +87,6 @@ Generates a PDF file for the registered UUID of the HTML template file.
 
 The request to this must be a map which has the keys as the placeholders and the values to be substituted in its place.
 </td>
-<td></td>
 </tr>
 <tr>
 <td>
@@ -133,7 +120,6 @@ HTML template file
 <td>
 Updates the HTML template with the new one.
 </td>
-<td></td>
 </tr>
 <tr>
 <td>
@@ -158,25 +144,44 @@ Updates the HTML template with the new one.
 <td>
 Health check endpoint to see if the service is okay.
 </td>
-<td></td>
 </tr>
 </table>
 
-### Considerations
-1. Use basic [net/http](https://pkg.go.dev/net/http "net/http") package or at most [gorilla/mux](https://pkg.go.dev/github.com/gorilla/mux "gorilla/mux") of Go.
-2. The service must be [dockerized](https://docs.docker.com/get-started/ "dockerized") with a [docker compose](https://docs.docker.com/compose/ "docker compose") file to manage the service(s).
-3. Proper HTTP Headers must be sent in the response to identify the type of data being sent.
-4. The default response from the service must be in JSON in the specified format, for all scenarios.
-5. SDK functions may be used to prevent clubbing the functionality of various services(Redis, PDF generation). These functions must be fully unit test tested with minimum 85% code coverage.
-6. Unit tested code with a minimum coverage of 80% and business scenarios to be demonstrated in the form of unit/system test cases.
-7. Must follow proper CLEAN code principles with appropriate Go project structure.
-8. There must be a timeout if the request is being processed for more than 5 seconds.
-9. Verify that there is no access restriction to the file.
 
-### References
-- [HTTP request for file upload](https://stackoverflow.com/questions/14962592/whats-content-type-value-within-a-http-request-when-uploading-content)
-- [Content-Disposition HEADER](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition)
-- [go-wkhtmltopdf](https://github.com/SebastiaanKlippert/go-wkhtmltopdf)
-- [Installing package on deb](https://wireframesketcher.com/support/install/installing-deb-package-on-ubuntu-debian.html)
-- [Using wget to download files in deb](https://stackoverflow.com/questions/14306382/how-to-rename-the-downloaded-file-with-wget)
-- [Creating Go HTML templates](https://www.practical-go-lessons.com/chap-32-templates "Creating Go HTML templates")
+### In order to use the SDK functions:
+* `go get` the package 
+```
+go get github.com/vatsal278/html-pdf-service
+```
+* `import` the `sdk` package in the source code
+```
+import "github.com/vatsal278/html-pdf-service/pkg/sdk"
+```
+* Get an instance to the SDK Wrapper, Passing in the url to a running html-pdf-service.
+```
+s := sdk.NewHtmlToPdfSvc("html-pdf-service url")
+```
+* Read a html file and pass the Byte slice of file to Register a html template file. A Uuid of the publisher will be returned that needs to be used to push message to the `channel`.
+```
+fileBytes, _ := os.ReadFile("path to html file")
+uuid, _ := s.Register(fileBytes)
+```
+* To Generate the pdf from html file. 
+It takes in template data in map[string]interface format and `uuid` which was recieved at time of registration of template . 
+```
+_ = s.GeneratePdf((map[string]interface{}{"data": "anydata"}, `uuid`)
+```
+* To Replace the template file pass the byte slice of template file and Uuid to Replace function.
+```
+fileBytes, _ := os.ReadFile("path to new html file")
+_ = s.Replace(`fileBytes`, `uuid`)
+```
+* Examples of the sdk usage can be found [here](./examples/test.go)
+
+## Additional read
+* [Docs](./docs/README 1.md)
+* To check the code coverage 
+```
+cd docs
+go tool cover -html=coverage
+```
