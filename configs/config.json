@@ -14,5 +14,5 @@
     "port": "6379",
     "host": "Redis"
   },
-  "max_memory":50000
+  "max_memory":5126
 }

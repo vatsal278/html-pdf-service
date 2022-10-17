@@ -736,7 +736,7 @@ func TestReplace(t *testing.T) {
 			},
 		},
 		{
-			name:        "Failure:: Replace:: parse multipart failure",
+			name:        "Failure:: Replace:: Form file failure.",
 			requestBody: "1",
 			setupFunc: func() (*http.Request, *htmlPdfService) {
 				b := new(bytes.Buffer)

@@ -201,7 +201,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 				Data:    nil,
 			}
 		}
-		log.Error(fmt.Sprintf("%+v", *req))
+		//log.Error(fmt.Sprintf("%+v", *req))
 		t, err := template.New(req.Id).Parse(string(buf))
 		if err != nil {
 			log.Error(err)

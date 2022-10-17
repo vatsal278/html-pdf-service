@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
@@ -421,8 +422,10 @@ func Test_HtmlToPdf(t *testing.T) {
 		{
 			name:        "Success:: HtmlToPdf",
 			requestBody: "1",
+
 			setupFunc: func() *htmlPdfServiceLogic {
-				js, _ := json.Marshal(map[string]interface{}{
+				buff := bytes.NewBuffer(nil)
+				json.NewEncoder(buff).Encode(map[string]interface{}{
 					"Pages": []interface{}{
 						map[string]interface{}{
 							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("abc")),
@@ -432,13 +435,10 @@ func Test_HtmlToPdf(t *testing.T) {
 						},
 					},
 				})
-				var a uint8
-				a = 10
-				js = append(js, a)
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
-				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), js).Return(nil).Times(1)
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), buff.Bytes()).Return(nil).Times(1)
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
-				mockDatasource.EXPECT().GetFile("1").Return(js, nil) //PR COMMENT STILL IN PROGRESS
+				mockDatasource.EXPECT().GetFile("1").Return(buff.Bytes(), nil) //PR COMMENT STILL IN PROGRESS
 				rec := &htmlPdfServiceLogic{
 					dsSvc: mockDatasource,
 					htSvc: mockHtmlsvc,
@@ -537,7 +537,8 @@ func Test_HtmlToPdf(t *testing.T) {
 			name:        "Failure:: HtmlToPdf:: assertion for Base64PageData failed",
 			requestBody: "1",
 			setupFunc: func() *htmlPdfServiceLogic {
-				js, _ := json.Marshal(map[string]interface{}{
+				buff := bytes.NewBuffer(nil)
+				json.NewEncoder(buff).Encode(map[string]interface{}{
 					"Custom-Field": "hello",
 					"Pages": []interface{}{
 						map[string]interface{}{
@@ -545,13 +546,10 @@ func Test_HtmlToPdf(t *testing.T) {
 						},
 					},
 				})
-				var a uint8
-				a = 10
-				js = append(js, a)
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
-				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), js).Return(errors.New("Base64PageData is empty")).Times(1)
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), buff.Bytes()).Return(errors.New("Base64PageData is empty")).Times(1)
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
-				mockDatasource.EXPECT().GetFile("1").Return(js, nil)
+				mockDatasource.EXPECT().GetFile("1").Return(buff.Bytes(), nil)
 				rec := &htmlPdfServiceLogic{
 					dsSvc: mockDatasource,
 					htSvc: mockHtmlsvc,

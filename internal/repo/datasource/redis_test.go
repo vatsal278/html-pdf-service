@@ -64,7 +64,7 @@ func Test_SaveFile(t *testing.T) {
 		name         string
 		expiry       time.Duration
 		setupFunc    func() *mocks.MockCacher
-		validateFunc func(DataSource, string, error)
+		validateFunc func(error)
 	}{
 		{
 			name: "Success:: Save File",
@@ -73,7 +73,7 @@ func Test_SaveFile(t *testing.T) {
 				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				return mockcacher
 			},
-			validateFunc: func(cacher DataSource, data string, err error) {
+			validateFunc: func(err error) {
 				if err != nil {
 					t.Errorf("want %v got %v", nil, err.Error())
 				}
@@ -87,7 +87,7 @@ func Test_SaveFile(t *testing.T) {
 				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), 2*time.Second).Times(1).Return(nil)
 				return mockcacher
 			},
-			validateFunc: func(cacher DataSource, data string, err error) {
+			validateFunc: func(err error) {
 				if err != nil {
 					t.Errorf("want %v got %v", nil, err.Error())
 				}
@@ -100,9 +100,9 @@ func Test_SaveFile(t *testing.T) {
 				mockcacher.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("Failed to set cache"))
 				return mockcacher
 			},
-			validateFunc: func(cacher DataSource, data string, err error) {
-				if err == errors.New("Failed to set cache") {
-					t.Errorf("want %v got %v", errors.New("Failed to set cache"), nil)
+			validateFunc: func(err error) {
+				if err.Error() != errors.New("Failed to set cache").Error() {
+					t.Errorf("want %v got %v", errors.New("Failed to set cache"), err.Error())
 				}
 			},
 		},
@@ -113,7 +113,7 @@ func Test_SaveFile(t *testing.T) {
 			cacherSvc := config.CacherSvc{Cacher: mockcacher}
 			ds := NewRedisDs(&cacherSvc)
 			err := ds.SaveFile("1", []byte("abc"), tt.expiry)
-			tt.validateFunc(ds, "abc", err)
+			tt.validateFunc(err)
 		})
 	}
 
@@ -202,7 +202,7 @@ func Test_GetFile(t *testing.T) {
 				return mockcacher
 			},
 			validateFunc: func(s []byte, request string, err error) {
-				if err == errors.New("Failed to get cache") {
+				if err.Error() != errors.New("Failed to get cache").Error() {
 					t.Errorf("want %v got %v", errors.New("Failed to get cache"), err)
 				}
 			},
