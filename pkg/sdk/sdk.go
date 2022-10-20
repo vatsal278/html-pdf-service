@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/gorilla/mux"
 	"io"
@@ -86,13 +85,9 @@ func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {
 		return err
 	}
 	contType := writer.FormDataContentType()
-	err = writer.Close()
-	if err != nil {
-		return err
-	}
+	writer.Close()
 	r, err := http.NewRequest(http.MethodPut, h.svcUrl+"/v1/register/"+id, body)
 	if err != nil {
-		log.Error(err)
 		return err
 	}
 	r.Header.Set("Content-Type", contType)
@@ -113,7 +108,11 @@ func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {
 	if err != nil {
 		return err
 	}
-	data := response.Data.(map[string]interface{})
+	data, ok := response.Data.(map[string]interface{})
+	if !ok {
+		errNew := errors.New("unable to parse response data")
+		return errNew
+	}
 	if data["id"] != id {
 		return fmt.Errorf("incorrect id received in response")
 	}

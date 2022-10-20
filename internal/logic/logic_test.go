@@ -10,7 +10,6 @@ import (
 	"github.com/vatsal278/html-pdf-service/internal/codes"
 	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -426,12 +425,8 @@ func Test_HtmlToPdf(t *testing.T) {
 
 			setupFunc: func() *htmlPdfServiceLogic {
 				buff := bytes.NewBuffer(nil)
-				fileBytes, err := ioutil.ReadFile("./../../docs/Failure.html")
-				if err != nil {
-					t.Error(err)
-				}
 				htmlTopdfSvc := htmlToPdf.NewWkHtmlToPdfSvc()
-				jb, err := htmlTopdfSvc.GetJsonFromHtml(fileBytes)
+				jb, err := htmlTopdfSvc.GetJsonFromHtml([]byte("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>{{.Title}}</title>\n</head>\n<body>\n{{$total:=0.0}}\n<h1>{{.Title}}</h1>\n<table border=\"1px solid black\">\n    <th></th>\n    <th>Item</th>\n    <th>Amount</th>\n    <th>Evaluation</th>\n    {{range $index, $element := .Items}}\n        <tr>\n            <td>{{.Item}}</td>\n            <td>{{.Amount}}</td>\n            <td>\n                {{if ge .Amount 100.0}}\n                    Maybe\n                {{else}}\n                    Okay\n                {{end}}\n            </td>\n        </tr>\n    {{end}}\n</table>\n<p>Total: {{$total}}</p>\n</body>\n</html>"))
 				if err != nil {
 					t.Errorf("unable to convert to bytes")
 				}
@@ -739,8 +734,38 @@ func Test_HtmlToPdf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rec := tt.setupFunc()
+			type Cart struct {
+				Item   string
+				Amount float64
+			}
+			value := map[string]any{
+				"Items": []Cart{
+					{
+						Item:   "Bread",
+						Amount: 24,
+					},
+					{
+						Item:   "Rice",
+						Amount: 56.7,
+					},
+					{
+						Item:   "Clothes",
+						Amount: 150.45,
+					},
+					{
+						Item:   "Water",
+						Amount: 100,
+					},
+					{
+						Item:   "Gas",
+						Amount: 100.00,
+					},
+				},
+				"Title": "Inventory list",
+			}
 			resp := rec.HtmlToPdf(nil, &model.GenerateReq{
-				Values: nil,
+
+				Values: value,
 				Id:     tt.requestBody,
 			})
 			tt.validateFunc(resp)
