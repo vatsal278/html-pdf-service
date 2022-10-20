@@ -149,7 +149,7 @@ func Test_DeleteFile(t *testing.T) {
 			},
 			validateFunc: func(err error) {
 				t.Log(err)
-				if err == errors.New("failed to delete cache") {
+				if err.Error() != errors.New("failed to delete cache").Error() {
 					t.Errorf("want %v got %v", errors.New("failed to delete cache"), err)
 				}
 			},
