@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// after registering generate the pdf and then replace and again generate pdf
 	controller := sdk.NewHtmlToPdfSvc("http://localhost:9090")
 	fileBytes, err := os.ReadFile("./../docs/Failure.html")
 	if err != nil {
@@ -20,18 +21,28 @@ func main() {
 		return
 	}
 	log.Print(id)
-	fileBytes, err = os.ReadFile("./../docs/Template.html")
-	err = controller.Replace(fileBytes, id)
-	if err != nil {
-		log.Print(err.Error())
-		return
-	}
 	b, err := controller.GeneratePdf(map[string]interface{}{"id": "1"}, id)
 	if err != nil {
 		log.Print(err.Error())
 		return
 	}
 	err = ioutil.WriteFile("output.pdf", b, 0777)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fileBytes, err = os.ReadFile("./../docs/Template.html")
+	err = controller.Replace(fileBytes, id)
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+	b, err = controller.GeneratePdf(map[string]interface{}{"id": "1"}, id)
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+	err = ioutil.WriteFile("newOutput.pdf", b, 0777)
 	if err != nil {
 		log.Fatalln(err)
 	}

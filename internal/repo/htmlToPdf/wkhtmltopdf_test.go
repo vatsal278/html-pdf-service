@@ -20,7 +20,7 @@ func TestGetJsonFromHtml(t *testing.T) {
 		{
 			name: "Success",
 			setupFunc: func() []byte {
-				b, err := os.ReadFile("Failure.html")
+				b, err := os.ReadFile("./../../../docs/Failure.html")
 				if err != nil {
 					t.Error(err)
 				}
@@ -59,7 +59,7 @@ func TestGeneratePdf(t *testing.T) {
 		{
 			name: "Success",
 			setupFunc: func() []byte {
-				b, err := os.ReadFile("Failure.html")
+				b, err := os.ReadFile("./../../../docs/Failure.html")
 				if err != nil {
 					t.Error(err)
 				}

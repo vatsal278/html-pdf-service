@@ -10,13 +10,16 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
-	modelV "github.com/vatsal278/html-pdf-service/internal/model"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 )
+
+type GenerateReq struct {
+	Values map[string]interface{} `json:"values"`
+	Id     string                 `json:"-"`
+}
 
 func testServer(url string, method string, f func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
 	router := mux.NewRouter()
@@ -28,7 +31,6 @@ func testServer(url string, method string, f func(w http.ResponseWriter, r *http
 func Test_Register(t *testing.T) {
 	tests := []struct {
 		name              string
-		filePath          string
 		setupFunc         func() *httptest.Server
 		mockServerHandler func(w http.ResponseWriter, r *http.Request)
 		ValidateFunc      func(id string, err error)
@@ -36,8 +38,7 @@ func Test_Register(t *testing.T) {
 		expectedResponse  model.Response
 	}{
 		{
-			name:     "Success:: Register",
-			filePath: "./../../docs/Failure.html",
+			name: "Success:: Register",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
@@ -73,8 +74,7 @@ func Test_Register(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Register :: incorrect status code received",
-			filePath: "./../../docs/Failure.html",
+			name: "Failure:: Register :: incorrect status code received",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusBadRequest, "Failure", nil)
@@ -91,8 +91,7 @@ func Test_Register(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Register :: incorrect test server path", //doubt
-			filePath: "./../../go.mod",
+			name: "Failure:: Register :: incorrect test server path", //doubt
 			setupFunc: func() *httptest.Server {
 				svr := testServer("new", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusCreated, "SUCCESS", nil)
@@ -115,8 +114,7 @@ func Test_Register(t *testing.T) {
 			defer tt.cleanupFunc(svr)
 
 			calls := NewHtmlToPdfSvc(svr.URL)
-			fileBytes, _ := os.ReadFile(tt.filePath)
-			id, err := calls.Register(fileBytes)
+			id, err := calls.Register([]byte("abc"))
 
 			tt.ValidateFunc(id, err)
 		})
@@ -125,7 +123,6 @@ func Test_Register(t *testing.T) {
 func Test_Replace(t *testing.T) {
 	tests := []struct {
 		name              string
-		filePath          string
 		id                string
 		setupFunc         func() *httptest.Server
 		mockServerHandler func(w http.ResponseWriter, r *http.Request)
@@ -134,9 +131,8 @@ func Test_Replace(t *testing.T) {
 		expectedResponse  model.Response
 	}{
 		{
-			name:     "Success:: Replace",
-			id:       "1",
-			filePath: "./../../docs/Failure.html",
+			name: "Success:: Replace",
+			id:   "1",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					vars := mux.Vars(r)
@@ -175,8 +171,47 @@ func Test_Replace(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Replace :: incorrect status code",
-			filePath: "./../../docs/Failure.html",
+			name: "Failure:: Replace :: incorrect id in response",
+			id:   "1",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
+					vars := mux.Vars(r)
+					_, ok := vars["id"]
+					if !ok {
+						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNeeded), nil)
+						return
+					}
+					err := r.ParseMultipartForm(10000)
+					if err != nil {
+						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileSizeExceeded), nil)
+						log.Error(err.Error())
+						return
+					}
+					file, _, err := r.FormFile("file")
+					if err != nil {
+						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrFileParseFail), nil)
+						log.Error(err.Error())
+						return
+					}
+					defer file.Close()
+
+					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
+						"id": "gfhgv",
+					})
+				})
+				return svr
+			},
+			ValidateFunc: func(err error) {
+				if err.Error() != "incorrect id received in response" {
+					t.Errorf("Want: %v, Got: %v", "incorrect id received in response", err)
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: Replace :: incorrect status code",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
@@ -209,8 +244,7 @@ func Test_Replace(t *testing.T) {
 			},
 		},
 		{
-			name:     "Failure:: Replace :: incorrect file type", //doubt
-			filePath: "./../../Dockerfile",
+			name: "Failure:: Replace :: incorrect file type", //doubt
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
@@ -249,9 +283,8 @@ func Test_Replace(t *testing.T) {
 			defer tt.cleanupFunc(svr)
 
 			calls := NewHtmlToPdfSvc(svr.URL)
-			fileBytes, err := os.ReadFile(tt.filePath)
 
-			err = calls.Replace(fileBytes, tt.id)
+			err := calls.Replace([]byte("abc"), tt.id)
 
 			tt.ValidateFunc(err)
 		})
@@ -281,7 +314,7 @@ func Test_GeneratePdf(t *testing.T) {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNeeded), nil)
 						return
 					}
-					var data modelV.GenerateReq
+					var data GenerateReq
 					err := json.NewDecoder(r.Body).Decode(&data)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrDecodingData), nil)
@@ -317,7 +350,7 @@ func Test_GeneratePdf(t *testing.T) {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNeeded), nil)
 						return
 					}
-					var data modelV.GenerateReq
+					var data GenerateReq
 					err := json.NewDecoder(r.Body).Decode(&data)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrDecodingData), nil)
@@ -353,7 +386,7 @@ func Test_GeneratePdf(t *testing.T) {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrIdNeeded), nil)
 						return
 					}
-					var data modelV.GenerateReq
+					var data GenerateReq
 					err := json.NewDecoder(r.Body).Decode(&data)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrDecodingData), nil)

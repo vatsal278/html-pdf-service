@@ -10,6 +10,7 @@ import (
 	"github.com/vatsal278/html-pdf-service/internal/codes"
 	"github.com/vatsal278/html-pdf-service/internal/repo/htmlToPdf"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -425,13 +426,19 @@ func Test_HtmlToPdf(t *testing.T) {
 
 			setupFunc: func() *htmlPdfServiceLogic {
 				buff := bytes.NewBuffer(nil)
+				fileBytes, err := ioutil.ReadFile("./../../docs/Failure.html")
+				if err != nil {
+					t.Error(err)
+				}
+				htmlTopdfSvc := htmlToPdf.NewWkHtmlToPdfSvc()
+				jb, err := htmlTopdfSvc.GetJsonFromHtml(fileBytes)
+				if err != nil {
+					t.Errorf("unable to convert to bytes")
+				}
 				json.NewEncoder(buff).Encode(map[string]interface{}{
 					"Pages": []interface{}{
 						map[string]interface{}{
-							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("abc")),
-						},
-						map[string]interface{}{
-							"Base64PageData": nil,
+							"Base64PageData": base64.StdEncoding.EncodeToString(jb),
 						},
 					},
 				})
