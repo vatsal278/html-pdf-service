@@ -183,5 +183,5 @@ _ = s.Replace(`fileBytes`, `uuid`)
 * To check the code coverage 
 ```
 cd docs
-go tool cover -html=coverage
+go tool cover -html='cover.out'
 ```
