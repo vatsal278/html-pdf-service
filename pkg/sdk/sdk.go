@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/gorilla/mux"
 	"io"
@@ -124,6 +125,7 @@ type GenPdfReq struct {
 }
 
 func (h *htmlToPdfSvc) GeneratePdf(templateData map[string]interface{}, id string) ([]byte, error) {
+
 	b, err := json.Marshal(GenPdfReq{
 		Values: templateData,
 	})
@@ -135,6 +137,7 @@ func (h *htmlToPdfSvc) GeneratePdf(templateData map[string]interface{}, id strin
 	if err != nil {
 		return nil, err
 	}
+	r.Header.Set("Content-Type", "application/json")
 	resp, err := h.client.Do(r)
 	if err != nil {
 		return nil, err
@@ -143,9 +146,11 @@ func (h *htmlToPdfSvc) GeneratePdf(templateData map[string]interface{}, id strin
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, fmt.Errorf("non success status code received : %v", resp.StatusCode)
 	}
-	by, err := ioutil.ReadAll(r.Body)
+	file := resp.Header.Get("Content-Disposition")
+	log.Info(file)
+	filebyte, err := json.Marshal(file)
 	if err != nil {
 		return nil, err
 	}
-	return by, err
+	return filebyte, err
 }

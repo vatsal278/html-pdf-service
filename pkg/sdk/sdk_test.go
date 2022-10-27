@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -68,9 +69,11 @@ func Test_Register(t *testing.T) {
 						t.Errorf("Want: %v, Got: %v", []byte("abc"), fileBytes)
 					}
 					defer file.Close()
-					//if !reflect.DeepEqual(r.Header.Get("Content-Type"), "multipart/form-data") {
-					//	t.Errorf("Want: %v, Got: %v", "multipart/form-data", r.Header.Get("Content-Type"))
-					//}
+					cType := r.Header.Get("Content-Type")
+					x := strings.Split(cType, ";")
+					if !reflect.DeepEqual(x[0], "multipart/form-data") {
+						t.Errorf("Want: %v, Got: %v", "multipart/form-data", x[0])
+					}
 					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
 						"id": "1",
 					})
@@ -83,23 +86,6 @@ func Test_Register(t *testing.T) {
 				}
 				if id != "1" {
 					t.Errorf("Want: %v, Got: %v", "not nil", "")
-				}
-			},
-			cleanupFunc: func(svr *httptest.Server) {
-				svr.Close()
-			},
-		},
-		{
-			name: "Failure:: Register:: readall",
-			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
-					response.ToJson(w, http.StatusCreated, "SUCCESS", Reader(""))
-				})
-				return svr
-			},
-			ValidateFunc: func(id string, err error) {
-				if err.Error() != errors.New("unable to parse response data").Error() {
-					t.Errorf("Want: %v, Got: %v", errors.New("unable to parse response data").Error(), err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -216,9 +202,11 @@ func Test_Replace(t *testing.T) {
 						t.Errorf("Want: %v, Got: %v", []byte("abc"), fileBytes)
 					}
 					defer file.Close()
-					//if !reflect.DeepEqual(r.Header.Get("Content-Type"), "multipart/form-data") {
-					//	t.Errorf("Want: %v, Got: %v", "multipart/form-data", r.Header.Get("Content-Type"))
-					//}
+					cType := r.Header.Get("Content-Type")
+					x := strings.Split(cType, ";")
+					if !reflect.DeepEqual(x[0], "multipart/form-data") {
+						t.Errorf("Want: %v, Got: %v", "multipart/form-data", x[0])
+					}
 					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
 						"id": id,
 					})
@@ -432,42 +420,39 @@ func Test_GeneratePdf(t *testing.T) {
 					if !reflect.DeepEqual(data.Values["id"], "1") {
 						t.Errorf("Want: %v, Got: %v", "1", data.Values["id"])
 					}
-					//if !reflect.DeepEqual(r.Header.Get("Content-Type"), "multipart/form-data") {
-					//	t.Errorf("Want: %v, Got: %v", "multipart/form-data", r.Header.Get("Content-Type"))
-					//}
+					if !reflect.DeepEqual(r.Header.Get("Content-Type"), "application/json") {
+						t.Errorf("Want: %v, Got: %v", "application/json", r.Header.Get("Content-Type"))
+					}
 					response.ToJson(w, http.StatusOK, "", nil)
 				})
 				return svr
 			},
 			ValidateFunc: func(b []byte, err error) {
-				t.Log(b)
 				if err != nil {
 					t.Errorf("Want: %v, Got: %v", nil, err.Error())
+				}
+				var tempResp model.Response
+				err = json.Unmarshal(b, &tempResp)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(tempResp, model.Response{
+					Status:  http.StatusOK,
+					Message: "",
+					Data:    nil,
+				}) {
+					t.Errorf("Want: %v, Got: %v", model.Response{
+						Status:  http.StatusOK,
+						Message: "",
+						Data:    nil,
+					}, tempResp)
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
 				svr.Close()
 			},
 		},
-		//{
-		//	name: "Failure:: GeneratePdf",
-		//	id:   "1",
-		//	data: map[string]interface{}{"id": "1"},
-		//	setupFunc: func() *httptest.Server {
-		//		svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
-		//			json.NewEncoder(w).Encode("")
-		//		})
-		//		return svr
-		//	},
-		//	ValidateFunc: func(err error) {
-		//		if err != nil {
-		//			t.Errorf("Want: %v, Got: %v", nil, err.Error())
-		//		}
-		//	},
-		//	cleanupFunc: func(svr *httptest.Server) {
-		//		svr.Close()
-		//	},
-		//},
 		{
 			name: "Failure:: GeneratePdf :: incorrect status code",
 			id:   "1",

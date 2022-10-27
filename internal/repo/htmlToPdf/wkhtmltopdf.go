@@ -33,7 +33,6 @@ func (w wkHtmlToPdf) GeneratePdf(wr io.Writer, b []byte) error {
 	}
 	pdfgFromJSON.SetOutput(wr)
 	err = pdfgFromJSON.Create()
-
 	if err != nil {
 		return err
 	}

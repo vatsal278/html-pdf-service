@@ -201,6 +201,7 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 				Data:    nil,
 			}
 		}
+		log.Info(string(buf))
 		t, err := template.New(req.Id).Parse(string(buf))
 		if err != nil {
 			log.Error(err)
@@ -241,5 +242,6 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 			Data:    nil,
 		}
 	}
+
 	return &respModel.Response{Status: http.StatusOK}
 }

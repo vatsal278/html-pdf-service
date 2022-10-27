@@ -425,20 +425,51 @@ func Test_HtmlToPdf(t *testing.T) {
 
 			setupFunc: func() *htmlPdfServiceLogic {
 				buff := bytes.NewBuffer(nil)
-				htmlTopdfSvc := htmlToPdf.NewWkHtmlToPdfSvc()
-				jb, err := htmlTopdfSvc.GetJsonFromHtml([]byte("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>{{.Title}}</title>\n</head>\n<body>\n{{$total:=0.0}}\n<h1>{{.Title}}</h1>\n<table border=\"1px solid black\">\n    <th></th>\n    <th>Item</th>\n    <th>Amount</th>\n    <th>Evaluation</th>\n    {{range $index, $element := .Items}}\n        <tr>\n            <td>{{.Item}}</td>\n            <td>{{.Amount}}</td>\n            <td>\n                {{if ge .Amount 100.0}}\n                    Maybe\n                {{else}}\n                    Okay\n                {{end}}\n            </td>\n        </tr>\n    {{end}}\n</table>\n<p>Total: {{$total}}</p>\n</body>\n</html>"))
-				if err != nil {
-					t.Errorf("unable to convert to bytes")
-				}
-				json.NewEncoder(buff).Encode(map[string]interface{}{
+				err := json.NewEncoder(buff).Encode(map[string]interface{}{
 					"Pages": []interface{}{
 						map[string]interface{}{
-							"Base64PageData": base64.StdEncoding.EncodeToString(jb),
+							"Base64PageData": base64.StdEncoding.EncodeToString([]byte("{{range $index, $element := .Items}}\n<li>{{ $element }}</li>{{ end }}")),
 						},
 					},
 				})
+				if err != nil {
+					t.Errorf("unable to encode data")
+				}
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
-				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), buff.Bytes()).Return(nil).Times(1)
+				t.Log(string(buff.Bytes()))
+				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(nil).Times(1).DoAndReturn(func(_ io.Writer, b []byte) error {
+					t.Log(string(b))
+					type Pages struct {
+						P string `json:"Base64PageData"`
+					}
+					type Data struct {
+						Page []Pages `json:"Pages"`
+					}
+					var data Data
+					err = json.Unmarshal(b, &data)
+					if err != nil {
+						return err
+					}
+					decodedB, err := base64.StdEncoding.DecodeString(data.Page[0].P)
+					if err != nil {
+						return err
+					}
+					t.Log(string(decodedB))
+					if !reflect.DeepEqual(decodedB, []byte(`
+<li>{Bread 24}</li>
+<li>{Rice 56.7}</li>
+<li>{Clothes 150.45}</li>
+<li>{Water 100}</li>
+<li>{Gas 100}</li>`)) {
+						t.Errorf("want %v got %v", `
+<li>{Bread 24}</li>
+<li>{Rice 56.7}</li>
+<li>{Clothes 150.45}</li>
+<li>{Water 100}</li>
+<li>{Gas 100}</li>`, string(decodedB))
+					}
+					return nil
+				})
 				mockDatasource := mock.NewMockDataSource(mockCtrl)
 				mockDatasource.EXPECT().GetFile("1").Return(buff.Bytes(), nil) //PR COMMENT STILL IN PROGRESS
 				rec := &htmlPdfServiceLogic{
