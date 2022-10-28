@@ -42,7 +42,6 @@ func NewHtmlPdfServiceLogic(ds datasource.DataSource, ht htmlToPdf.HtmlToPdf) Ht
 }
 
 func (l htmlPdfServiceLogic) Ping(req *model.PingRequest) *respModel.Response {
-	// add business logic here
 	res, err := l.dsSvc.Ping(&model.PingDs{
 		Data: req.Data,
 	})

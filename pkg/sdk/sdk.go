@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/gorilla/mux"
 	"io"
@@ -132,7 +131,6 @@ func (h *htmlToPdfSvc) GeneratePdf(templateData map[string]interface{}, id strin
 	if err != nil {
 		return nil, err
 	}
-
 	r, err := http.NewRequest(http.MethodPost, h.svcUrl+"/v1/generate/"+id, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
@@ -146,9 +144,7 @@ func (h *htmlToPdfSvc) GeneratePdf(templateData map[string]interface{}, id strin
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, fmt.Errorf("non success status code received : %v", resp.StatusCode)
 	}
-	file := resp.Header.Get("Content-Disposition")
-	log.Info(file)
-	filebyte, err := json.Marshal(file)
+	filebyte, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

@@ -107,7 +107,7 @@ func (svc htmlPdfService) ConvertToPdf(w http.ResponseWriter, r *http.Request) {
 		log.Error(resp.Message)
 		return
 	}
-	w.Header().Get()
+
 	w.Header().Set("Content-Disposition", "attachment; filename="+data.Id+".pdf")
 	w.Header().Set("Content-Type", "application/pdf")
 }

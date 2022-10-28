@@ -19,7 +19,6 @@ type Student struct {
 type Class []Student
 
 func main() {
-	// after registering generate the pdf and then replace and again generate pdf
 	controller := sdk.NewHtmlToPdfSvc("http://localhost:9090")
 	fileBytes, err := os.ReadFile("./docs/Failure.html")
 	if err != nil {
