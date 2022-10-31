@@ -22,7 +22,6 @@ import (
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/html-pdf-service/internal/logic HtmlPdfServiceLogicIer
 
 type HtmlPdfServiceLogicIer interface {
-	Ping(*model.PingRequest) *respModel.Response
 	HealthCheck() bool
 	HtmlToPdf(w io.Writer, req *model.GenerateReq) *respModel.Response
 	Upload(file io.Reader) *respModel.Response
@@ -38,25 +37,6 @@ func NewHtmlPdfServiceLogic(ds datasource.DataSource, ht htmlToPdf.HtmlToPdf) Ht
 	return &htmlPdfServiceLogic{
 		dsSvc: ds,
 		htSvc: ht,
-	}
-}
-
-func (l htmlPdfServiceLogic) Ping(req *model.PingRequest) *respModel.Response {
-	res, err := l.dsSvc.Ping(&model.PingDs{
-		Data: req.Data,
-	})
-	if err != nil {
-		log.Error("datasource error", err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "",
-			Data:    nil,
-		}
-	}
-	return &respModel.Response{
-		Status:  http.StatusOK,
-		Message: "Pong",
-		Data:    res,
 	}
 }
 
@@ -200,7 +180,6 @@ func (l htmlPdfServiceLogic) HtmlToPdf(w io.Writer, req *model.GenerateReq) *res
 				Data:    nil,
 			}
 		}
-		log.Info(string(buf))
 		t, err := template.New(req.Id).Parse(string(buf))
 		if err != nil {
 			log.Error(err)

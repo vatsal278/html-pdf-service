@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	respModel "github.com/PereRohit/util/model"
-	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -35,8 +34,6 @@ type HtmlToPdfSvcI interface {
 }
 
 func (h *htmlToPdfSvc) Register(fileBytes []byte) (string, error) {
-	//take in the slice of bytes so that you can pass it directly to io.copy
-	//take io.reader as argument
 	file := bytes.NewReader(fileBytes)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -45,6 +42,9 @@ func (h *htmlToPdfSvc) Register(fileBytes []byte) (string, error) {
 		return "", err
 	}
 	_, err = io.Copy(part, file)
+	if err != nil {
+		return "", err
+	}
 	writer.Close()
 	r, err := h.client.Post(h.svcUrl+"/v1/register", writer.FormDataContentType(), body)
 	if err != nil {
@@ -69,6 +69,9 @@ func (h *htmlToPdfSvc) Register(fileBytes []byte) (string, error) {
 		errNew := errors.New("unable to parse response data")
 		return "", errNew
 	}
+	if m["id"] == nil {
+		return "", errors.New("id not found in response")
+	}
 	return fmt.Sprint(m["id"]), err
 }
 
@@ -91,7 +94,6 @@ func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {
 		return err
 	}
 	r.Header.Set("Content-Type", contType)
-	r = mux.SetURLVars(r, map[string]string{"id": id})
 	resp, err := h.client.Do(r)
 	if err != nil {
 		return err

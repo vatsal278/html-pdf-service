@@ -9,17 +9,13 @@ type Config struct {
 	ServiceRouteVersion string              `json:"service_route_version"`
 	ServerConfig        config.ServerConfig `json:"server_config"`
 	// add custom config structs below for any internal services
-	DummyCfg  DummySvcCfg `json:"custom_svc"`
-	Cache     CacheCfg    `json:"cache"`
-	MaxMemory int64       `json:"max_memory"`
+	Cache     CacheCfg `json:"cache"`
+	MaxMemory int64    `json:"max_memory"`
 }
 
 type CacheCfg struct {
 	Port string `json:"port"`
 	Host string `json:"host"`
-}
-type DummySvcCfg struct {
-	DummyCfg string `json:"data"`
 }
 
 type SvcConfig struct {
@@ -27,13 +23,8 @@ type SvcConfig struct {
 	ServiceRouteVersion string
 	SvrCfg              config.ServerConfig
 	// add internal services after init
-	DummySvc   DummyInternalSvc
 	CacherSvc  CacherSvc
 	MaxMemmory int64
-}
-
-type DummyInternalSvc struct {
-	Data string
 }
 
 type CacherSvc struct {

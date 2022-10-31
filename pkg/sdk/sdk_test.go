@@ -3,11 +3,8 @@ package sdk
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/PereRohit/util/log"
 	"github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/response"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
@@ -50,19 +47,19 @@ func Test_Register(t *testing.T) {
 					err := r.ParseMultipartForm(10000) //File size to come from config
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file size exceeded", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					file, _, err := r.FormFile("file")
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file parse fail", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					fileBytes, err := ioutil.ReadAll(file)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file read fail", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					if !reflect.DeepEqual(fileBytes, []byte("abc")) {
@@ -86,6 +83,42 @@ func Test_Register(t *testing.T) {
 				}
 				if id != "1" {
 					t.Errorf("Want: %v, Got: %v", "not nil", "")
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure :: Register :: id not found in response",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
+						"xyz": "1",
+					})
+				})
+				return svr
+			},
+			ValidateFunc: func(id string, err error) {
+				if err.Error() != errors.New("id not found in response").Error() {
+					t.Errorf("Want: %v, Got: %v", "id not found in response", err.Error())
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: Register:: failed to assert response data",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+					response.ToJson(w, http.StatusCreated, "SUCCESS", "1")
+				})
+				return svr
+			},
+			ValidateFunc: func(id string, err error) {
+				if err.Error() != errors.New("unable to parse response data").Error() {
+					t.Errorf("Want: %v, Got: %v", "unable to parse response data", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -127,16 +160,17 @@ func Test_Register(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: Register :: incorrect test server path", //doubt
+			name: "Failure:: Register :: http post failure",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("new", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusCreated, "SUCCESS", nil)
 				})
+				svr.Close()
 				return svr
 			},
 			ValidateFunc: func(id string, err error) {
-				if err.Error() != fmt.Errorf("non success status code received : %v", http.StatusNotFound).Error() {
-					t.Errorf("Want: %v, Got: %v", fmt.Errorf("non success status code received : %v", http.StatusNotFound), err)
+				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
+					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -180,19 +214,19 @@ func Test_Replace(t *testing.T) {
 					err := r.ParseMultipartForm(10000)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file size exceeded", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					file, _, err := r.FormFile("file")
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file parse fail", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					fileBytes, err := ioutil.ReadAll(file)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file read fail", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					if !reflect.DeepEqual(id, "1") {
@@ -264,26 +298,6 @@ func Test_Replace(t *testing.T) {
 			id:   "1",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
-					vars := mux.Vars(r)
-					_, ok := vars["id"]
-					if !ok {
-						response.ToJson(w, http.StatusBadRequest, "id not found", nil)
-						return
-					}
-					err := r.ParseMultipartForm(10000)
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file size exceeeded", nil)
-						log.Error(err.Error())
-						return
-					}
-					file, _, err := r.FormFile("file")
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file parse fail", nil)
-						log.Error(err.Error())
-						return
-					}
-					defer file.Close()
-
 					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
 						"id": "gfhgv",
 					})
@@ -302,25 +316,7 @@ func Test_Replace(t *testing.T) {
 		{
 			name: "Failure:: Replace :: incorrect status code",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
-					err := r.ParseMultipartForm(10000) //File size to come from config
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file size exceeded", nil)
-						log.Error(err.Error())
-						return
-					}
-					file, _, err := r.FormFile("file")
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file parse fail", nil)
-						log.Error(err.Error())
-						return
-					}
-					defer file.Close()
-
-					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
-						"id": gomock.Any(),
-					})
-				})
+				svr := testServer("", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {})
 				return svr
 			},
 			ValidateFunc: func(err error) {
@@ -333,32 +329,15 @@ func Test_Replace(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: Replace :: incorrect file type", //doubt
+			name: "Failure:: Replace :: http post failure",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("/v1/register{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
-					err := r.ParseMultipartForm(10000) //File size to come from config
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file size exceeded", nil)
-						log.Error(err.Error())
-						return
-					}
-					file, _, err := r.FormFile("file")
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file parse fail", nil)
-						log.Error(err.Error())
-						return
-					}
-					defer file.Close()
-
-					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
-						"id": gomock.Any(),
-					})
-				})
+				svr := testServer("/v1/register{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {})
+				svr.Close()
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if err.Error() != "non success status code received : 404" {
-					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err.Error())
+				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
+					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -380,6 +359,20 @@ func Test_Replace(t *testing.T) {
 	}
 }
 func Test_GeneratePdf(t *testing.T) {
+	type Student struct {
+		Name  string
+		Marks int
+		Id    string
+	}
+	type Class []Student
+	var class Class
+	// defining struct instance
+	std1 := Student{"A", 90, "1"}
+	std2 := Student{"B", 100, "2"}
+	std3 := Student{"C", 88, "3"}
+	std4 := Student{"D", 25, "4"}
+	std5 := Student{"E", 35, "5"}
+	class = append(class, std4, std2, std3, std1, std5)
 	tests := []struct {
 		name              string
 		id                string
@@ -407,13 +400,13 @@ func Test_GeneratePdf(t *testing.T) {
 					err := json.NewDecoder(r.Body).Decode(&data)
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "error decoding data", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 					data.Id = id
 					if err != nil {
 						response.ToJson(w, http.StatusBadRequest, "file read fail", nil)
-						log.Error(err.Error())
+						t.Error(err.Error())
 						return
 					}
 
@@ -454,27 +447,49 @@ func Test_GeneratePdf(t *testing.T) {
 			},
 		},
 		{
+			name: "Failure:: GeneratePdf :: marshall error",
+			id:   "1",
+			data: map[string]interface{}{
+				"foo": make(chan int),
+			},
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+				})
+				return svr
+			},
+			ValidateFunc: func(b []byte, err error) {
+				if !strings.Contains(err.Error(), "json") {
+					t.Errorf("Want: %v, Got: %v", "json: unsupported type: chan int", err.Error())
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: GeneratePdf :: http post failure",
+			id:   "1",
+			data: map[string]interface{}{"id": "1"},
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {})
+				svr.Close()
+				return svr
+			},
+			ValidateFunc: func(b []byte, err error) {
+				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
+					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
 			name: "Failure:: GeneratePdf :: incorrect status code",
 			id:   "1",
 			data: map[string]interface{}{"id": "1"},
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
-					vars := mux.Vars(r)
-					//we take id as a parameter from url path
-					id, ok := vars["id"]
-					if !ok {
-						response.ToJson(w, http.StatusBadRequest, "id not found", nil)
-						return
-					}
-					var data GenerateReq
-					err := json.NewDecoder(r.Body).Decode(&data)
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "error decoding data", nil)
-						log.Error(err.Error())
-						return
-					}
-					data.Id = id
-
 					response.ToJson(w, http.StatusNotFound, "", nil)
 				})
 				return svr

@@ -2,9 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/PereRohit/util/log"
-	"github.com/PereRohit/util/request"
 	"github.com/PereRohit/util/response"
 	"github.com/gorilla/mux"
 	"github.com/vatsal278/html-pdf-service/internal/codes"
@@ -22,7 +20,6 @@ const HtmlPdfServiceName = "htmlPdfService"
 
 type HtmlPdfServiceHandler interface {
 	HealthChecker
-	Ping(w http.ResponseWriter, r *http.Request)
 	Upload(w http.ResponseWriter, r *http.Request)
 	ConvertToPdf(w http.ResponseWriter, r *http.Request)
 	ReplaceHtml(w http.ResponseWriter, r *http.Request)
@@ -55,19 +52,7 @@ func (svc htmlPdfService) HealthCheck() (svcName string, msg string, stat bool) 
 	set = true
 	return
 }
-func (svc htmlPdfService) Ping(w http.ResponseWriter, r *http.Request) {
-	req := &model.PingRequest{}
 
-	suggestedCode, err := request.FromJson(r, req)
-	if err != nil {
-		response.ToJson(w, suggestedCode, fmt.Sprintf("FAILED: %s", err.Error()), nil)
-		return
-	}
-	// call logic
-	resp := svc.logic.Ping(req)
-	response.ToJson(w, resp.Status, resp.Message, resp.Data)
-	return
-}
 func (svc htmlPdfService) Upload(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(svc.maxMemory) //File size to come from config
 	if err != nil {
