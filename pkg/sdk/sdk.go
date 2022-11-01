@@ -69,10 +69,15 @@ func (h *htmlToPdfSvc) Register(fileBytes []byte) (string, error) {
 		errNew := errors.New("unable to parse response data")
 		return "", errNew
 	}
-	if m["id"] == nil {
+	id, ok := m["id"]
+	if !ok {
 		return "", errors.New("id not found in response")
 	}
-	return fmt.Sprint(m["id"]), err
+	i, ok := id.(string)
+	if !ok {
+		return "", errors.New("unable to assert id to string")
+	}
+	return i, err
 }
 
 func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {

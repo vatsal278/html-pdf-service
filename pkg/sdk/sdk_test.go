@@ -117,7 +117,7 @@ func Test_Register(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(id string, err error) {
-				if err.Error() != errors.New("unable to parse response data").Error() {
+				if err.Error() != "unable to parse response data" {
 					t.Errorf("Want: %v, Got: %v", "unable to parse response data", err.Error())
 				}
 			},
@@ -134,7 +134,7 @@ func Test_Register(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(id string, err error) {
-				if err.Error() != errors.New("json: cannot unmarshal string into Go value of type model.Response").Error() {
+				if err.Error() != "json: cannot unmarshal string into Go value of type model.Response" {
 					t.Errorf("Want: %v, Got: %v", errors.New("json: cannot unmarshal string into Go value of type model.Response").Error(), err.Error())
 				}
 			},
@@ -404,14 +404,12 @@ func Test_GeneratePdf(t *testing.T) {
 						return
 					}
 					data.Id = id
-					if err != nil {
-						response.ToJson(w, http.StatusBadRequest, "file read fail", nil)
-						t.Error(err.Error())
-						return
+					tempData := GenerateReq{
+						Values: map[string]interface{}{"id": "1"},
+						Id:     "1",
 					}
-
-					if !reflect.DeepEqual(data.Values["id"], "1") {
-						t.Errorf("Want: %v, Got: %v", "1", data.Values["id"])
+					if !reflect.DeepEqual(data, tempData) {
+						t.Errorf("Want: %v, Got: %v", tempData, data)
 					}
 					if !reflect.DeepEqual(r.Header.Get("Content-Type"), "application/json") {
 						t.Errorf("Want: %v, Got: %v", "application/json", r.Header.Get("Content-Type"))
@@ -495,7 +493,7 @@ func Test_GeneratePdf(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(b []byte, err error) {
-				if !reflect.DeepEqual(err.Error(), errors.New("non success status code received : 404").Error()) {
+				if !reflect.DeepEqual(err.Error(), "non success status code received : 404") {
 					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err)
 				}
 			},

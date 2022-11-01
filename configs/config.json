@@ -7,9 +7,6 @@
     "name": "htmlPdfService",
     "log_level": "info"
   },
-  "custom_svc": {
-    "data": "this is a custom config"
-  },
   "cache": {
     "port": "6379",
     "host": "Redis"
