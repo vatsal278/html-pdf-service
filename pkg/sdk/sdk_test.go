@@ -160,7 +160,7 @@ func Test_Register(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: Register :: http post failure",
+			name: "Failure:: Register :: client.do failure",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("new", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusCreated, "SUCCESS", nil)
@@ -172,6 +172,7 @@ func Test_Register(t *testing.T) {
 				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
 					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
 				}
+				t.Log(err.Error())
 			},
 			cleanupFunc: func(svr *httptest.Server) {
 				svr.Close()
@@ -329,7 +330,7 @@ func Test_Replace(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: Replace :: http post failure",
+			name: "Failure:: Replace :: client.do failure",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {})
 				svr.Close()
@@ -465,7 +466,7 @@ func Test_GeneratePdf(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure:: GeneratePdf :: http post failure",
+			name: "Failure:: GeneratePdf :: client.do failure",
 			id:   "1",
 			data: map[string]interface{}{"id": "1"},
 			setupFunc: func() *httptest.Server {
@@ -475,7 +476,7 @@ func Test_GeneratePdf(t *testing.T) {
 			},
 			ValidateFunc: func(b []byte, err error) {
 				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
-					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
+					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
