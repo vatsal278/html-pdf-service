@@ -349,7 +349,7 @@ func Test_Replace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svr := tt.setupFunc()
 			defer tt.cleanupFunc(svr)
-
+			t.Log(svr.URL)
 			calls := NewHtmlToPdfSvc(svr.URL)
 
 			err := calls.Replace([]byte("abc"), tt.id)

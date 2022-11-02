@@ -32,7 +32,6 @@ func TestRegister(t *testing.T) {
 				//mock cacher
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 					CacherSvc: config.CacherSvc{Cacher: func() redis.Cacher {
 						mockCacher := mocks.NewMockCacher(mockCtrl)
 						mockCacher.EXPECT().Health().Return("", nil)
@@ -99,7 +98,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {
@@ -138,7 +136,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {

@@ -24,9 +24,6 @@ func TestInitSvcConfig(t *testing.T) {
 				cfg: Config{
 					ServiceRouteVersion: "v2",
 					ServerConfig:        config.ServerConfig{},
-					DummyCfg: DummySvcCfg{
-						DummyCfg: "dummy cfg",
-					},
 					Cache: CacheCfg{
 						Port: "",
 						Host: "",
@@ -39,9 +36,6 @@ func TestInitSvcConfig(t *testing.T) {
 					cfg: &Config{
 						ServiceRouteVersion: "v2",
 						ServerConfig:        config.ServerConfig{},
-						DummyCfg: DummySvcCfg{
-							DummyCfg: "dummy cfg",
-						},
 						Cache: CacheCfg{
 							Port: "",
 							Host: "",
@@ -50,7 +44,6 @@ func TestInitSvcConfig(t *testing.T) {
 					},
 					ServiceRouteVersion: "v2",
 					SvrCfg:              config.ServerConfig{},
-					DummySvc:            DummyInternalSvc{},
 					CacherSvc: func() CacherSvc {
 						return CacherSvc{
 							Cacher: redis.NewCacher(redis.Config{Addr: ":"})}

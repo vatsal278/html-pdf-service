@@ -64,20 +64,6 @@ func (mr *MockHtmlPdfServiceLogicIerMockRecorder) HtmlToPdf(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HtmlToPdf", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).HtmlToPdf), arg0, arg1)
 }
 
-// Ping mocks base method.
-func (m *MockHtmlPdfServiceLogicIer) Ping(arg0 *model0.PingRequest) *model.Response {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", arg0)
-	ret0, _ := ret[0].(*model.Response)
-	return ret0
-}
-
-// Ping indicates an expected call of Ping.
-func (mr *MockHtmlPdfServiceLogicIerMockRecorder) Ping(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockHtmlPdfServiceLogicIer)(nil).Ping), arg0)
-}
-
 // Replace mocks base method.
 func (m *MockHtmlPdfServiceLogicIer) Replace(arg0 string, arg1 io.Reader) *model.Response {
 	m.ctrl.T.Helper()

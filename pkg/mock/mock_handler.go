@@ -62,18 +62,6 @@ func (mr *MockHtmlPdfServiceHandlerMockRecorder) HealthCheck() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HealthCheck", reflect.TypeOf((*MockHtmlPdfServiceHandler)(nil).HealthCheck))
 }
 
-// Ping mocks base method.
-func (m *MockHtmlPdfServiceHandler) Ping(arg0 http.ResponseWriter, arg1 *http.Request) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Ping", arg0, arg1)
-}
-
-// Ping indicates an expected call of Ping.
-func (mr *MockHtmlPdfServiceHandlerMockRecorder) Ping(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockHtmlPdfServiceHandler)(nil).Ping), arg0, arg1)
-}
-
 // ReplaceHtml mocks base method.
 func (m *MockHtmlPdfServiceHandler) ReplaceHtml(arg0 http.ResponseWriter, arg1 *http.Request) {
 	m.ctrl.T.Helper()
