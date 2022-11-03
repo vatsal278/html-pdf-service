@@ -169,10 +169,28 @@ func Test_Register(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(id string, err error) {
-				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
-					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
+				if !strings.Contains(err.Error(), "Failed to make request") {
+					t.Errorf("Want: %v, Got: %v", "Failed to make request", err)
 				}
-				t.Log(err.Error())
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: Register:: unable to assert id to string",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
+						"id": model.Response{},
+					})
+				})
+				return svr
+			},
+			ValidateFunc: func(id string, err error) {
+				if err.Error() != errors.New("unable to assert id to string").Error() {
+					t.Errorf("Want: %v, Got: %v", "unable to assert id to string", err.Error())
+				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
 				svr.Close()
@@ -317,7 +335,9 @@ func Test_Replace(t *testing.T) {
 		{
 			name: "Failure:: Replace :: incorrect status code",
 			setupFunc: func() *httptest.Server {
-				svr := testServer("", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {})
+				svr := testServer("/v1/register{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
+					response.ToJson(w, http.StatusNotFound, "Failure", nil)
+				})
 				return svr
 			},
 			ValidateFunc: func(err error) {
@@ -337,8 +357,29 @@ func Test_Replace(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
-					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it.", err.Error())
+
+				if !strings.Contains(err.Error(), "Failed to make request") {
+					t.Errorf("Want: %v, Got: %v", "Failed to make request", err)
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: Replace:: unable to assert id to string",
+			id:   "1",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
+					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
+						"id": model.Response{},
+					})
+				})
+				return svr
+			},
+			ValidateFunc: func(err error) {
+				if err.Error() != errors.New("unable to assert id to string").Error() {
+					t.Errorf("Want: %v, Got: %v", "unable to assert id to string", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -350,7 +391,6 @@ func Test_Replace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svr := tt.setupFunc()
 			defer tt.cleanupFunc(svr)
-			t.Log(svr.URL)
 			calls := NewHtmlToPdfSvc(svr.URL)
 
 			err := calls.Replace([]byte("abc"), tt.id)
@@ -391,7 +431,6 @@ func Test_GeneratePdf(t *testing.T) {
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
 					vars := mux.Vars(r)
-					//we take id as a parameter from url path
 					id, ok := vars["id"]
 					if !ok {
 						response.ToJson(w, http.StatusBadRequest, "id not found", nil)
@@ -475,8 +514,8 @@ func Test_GeneratePdf(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(b []byte, err error) {
-				if !strings.Contains(err.Error(), "No connection could be made because the target machine actively refused it") {
-					t.Errorf("Want: %v, Got: %v", "No connection could be made because the target machine actively refused it", err.Error())
+				if !strings.Contains(err.Error(), "Failed to make request") {
+					t.Errorf("Want: %v, Got: %v", "Failed to make request", err)
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {

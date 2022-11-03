@@ -48,7 +48,7 @@ func (h *htmlToPdfSvc) Register(fileBytes []byte) (string, error) {
 	writer.Close()
 	r, err := h.client.Post(h.svcUrl+"/v1/register", writer.FormDataContentType(), body)
 	if err != nil {
-		return "", err
+		return "", errors.New("Failed to make request" + err.Error())
 	}
 
 	if r.StatusCode < 200 || r.StatusCode > 299 {
@@ -101,7 +101,7 @@ func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {
 	r.Header.Set("Content-Type", contType)
 	resp, err := h.client.Do(r)
 	if err != nil {
-		return err
+		return errors.New("Failed to make request" + err.Error())
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return fmt.Errorf("non success status code received : %v", resp.StatusCode)
@@ -120,7 +120,11 @@ func (h *htmlToPdfSvc) Replace(fileBytes []byte, id string) error {
 		errNew := errors.New("unable to parse response data")
 		return errNew
 	}
-	if data["id"] != id {
+	i, ok := data["id"].(string)
+	if !ok {
+		return errors.New("unable to assert id to string")
+	}
+	if i != id {
 		return fmt.Errorf("incorrect id received in response")
 	}
 	return err
@@ -145,7 +149,7 @@ func (h *htmlToPdfSvc) GeneratePdf(templateData map[string]interface{}, id strin
 	r.Header.Set("Content-Type", "application/json")
 	resp, err := h.client.Do(r)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Failed to make request" + err.Error())
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {

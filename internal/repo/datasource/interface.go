@@ -1,7 +1,6 @@
 package datasource
 
 import (
-	"github.com/vatsal278/html-pdf-service/internal/model"
 	"time"
 )
 
@@ -9,7 +8,6 @@ import (
 
 type DataSource interface {
 	HealthCheck() bool
-	Ping(*model.PingDs) (*model.DsResponse, error)
 	GetFile(s string) ([]byte, error)
 	SaveFile(key string, val interface{}, exp time.Duration) error
 	DeleteFile(key string) error

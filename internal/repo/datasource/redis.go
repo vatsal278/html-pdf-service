@@ -2,7 +2,6 @@ package datasource
 
 import (
 	"github.com/vatsal278/html-pdf-service/internal/config"
-	"github.com/vatsal278/html-pdf-service/internal/model"
 	"time"
 )
 
@@ -21,9 +20,6 @@ func (r redisDs) HealthCheck() bool {
 		return false
 	}
 	return true
-}
-func (r redisDs) Ping(ds *model.PingDs) (*model.DsResponse, error) {
-	return &model.DsResponse{}, nil
 }
 func (r redisDs) GetFile(s string) ([]byte, error) {
 	x := r.redisSvc.Cacher

@@ -9,7 +9,6 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	model "github.com/vatsal278/html-pdf-service/internal/model"
 )
 
 // MockDataSource is a mock of DataSource interface.
@@ -76,21 +75,6 @@ func (m *MockDataSource) HealthCheck() bool {
 func (mr *MockDataSourceMockRecorder) HealthCheck() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HealthCheck", reflect.TypeOf((*MockDataSource)(nil).HealthCheck))
-}
-
-// Ping mocks base method.
-func (m *MockDataSource) Ping(arg0 *model.PingDs) (*model.DsResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", arg0)
-	ret0, _ := ret[0].(*model.DsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Ping indicates an expected call of Ping.
-func (mr *MockDataSourceMockRecorder) Ping(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDataSource)(nil).Ping), arg0)
 }
 
 // SaveFile mocks base method.
