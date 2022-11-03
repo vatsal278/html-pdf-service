@@ -1,0 +1,126 @@
+{
+	"info": {
+		"_postman_id": "0275cf4a-aeca-49cc-bcc9-98c472c9ff8a",
+		"name": "html-to-pdf-svc",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21239620"
+	},
+	"item": [
+		{
+			"name": "generate pdf",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"values\": {\r\n        \"data\": [\r\n            {\r\n                \"Id\": \"1\",\r\n                \"Name\": \"vatsal\",\r\n                \"Marks\": 0\r\n            }\r\n        ]\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:9090/v1/generate/4ab46ac6-9754-4aa9-82ed-dcc0693d0d94",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9090",
+					"path": [
+						"v1",
+						"generate",
+						"4ab46ac6-9754-4aa9-82ed-dcc0693d0d94"
+					],
+					"query": [
+						{
+							"key": "files",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Program Files/work/redisPOC/Observation.png"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:9080/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9080",
+					"path": [
+						"upload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "replace",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Program Files/work/html-pdf-service/test/Failure.html"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:9090/v1/replace",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9090",
+					"path": [
+						"v1",
+						"replace"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ping",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:9090/v1/ping",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9090",
+					"path": [
+						"v1",
+						"ping"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

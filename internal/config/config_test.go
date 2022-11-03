@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+	"github.com/vatsal278/go-redis-cache"
 	"testing"
 
 	"github.com/PereRohit/util/config"
@@ -14,7 +16,7 @@ func TestInitSvcConfig(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *SvcConfig
+		want string
 	}{
 		{
 			name: "Success",
@@ -22,31 +24,47 @@ func TestInitSvcConfig(t *testing.T) {
 				cfg: Config{
 					ServiceRouteVersion: "v2",
 					ServerConfig:        config.ServerConfig{},
-					DummyCfg: DummySvcCfg{
-						DummyCfg: "dummy cfg",
+					Cache: CacheCfg{
+						Port: "",
+						Host: "",
 					},
+					MaxMemory: 1000,
 				},
 			},
-			want: &SvcConfig{
-				cfg: &Config{
+			want: func() string {
+				b, err := json.Marshal(&SvcConfig{
+					cfg: &Config{
+						ServiceRouteVersion: "v2",
+						ServerConfig:        config.ServerConfig{},
+						Cache: CacheCfg{
+							Port: "",
+							Host: "",
+						},
+						MaxMemory: 1000,
+					},
 					ServiceRouteVersion: "v2",
-					ServerConfig:        config.ServerConfig{},
-					DummyCfg: DummySvcCfg{
-						DummyCfg: "dummy cfg",
-					},
-				},
-				ServiceRouteVersion: "v2",
-				SvrCfg:              config.ServerConfig{},
-				DummySvc: DummyInternalSvc{
-					Data: "dummy cfg",
-				},
-			},
+					SvrCfg:              config.ServerConfig{},
+					CacherSvc: func() CacherSvc {
+						return CacherSvc{
+							Cacher: redis.NewCacher(redis.Config{Addr: ":"})}
+					}(),
+					MaxMemmory: 1000,
+				})
+				if err != nil {
+					t.Error(err)
+				}
+				return string(b)
+			}(),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := InitSvcConfig(tt.args.cfg)
-			diff := testutil.Diff(got, tt.want)
+			b, err := json.Marshal(got)
+			if err != nil {
+				t.Error(err)
+			}
+			diff := testutil.Diff(string(b), tt.want)
 			if diff != "" {
 				t.Error(testutil.Callers(), diff)
 			}

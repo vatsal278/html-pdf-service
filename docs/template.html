@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}}</title>
+</head>
+<body>
+{{$total:=0.0}}
+<h1>{{.Title}}</h1>
+<table border="1px solid black">
+    <th></th>
+    <th>Item</th>
+    <th>Amount</th>
+    <th>Evaluation</th>
+    {{range $index, $element := .Items}}
+        <tr>
+            <td>{{.Item}}</td>
+            <td>{{.Amount}}</td>
+            <td>
+                {{if ge .Amount 100.0}}
+                    Maybe
+                {{else}}
+                    Okay
+                {{end}}
+            </td>
+        </tr>
+    {{end}}
+</table>
+<p>Total: {{$total}}</p>
+</body>
+</html>

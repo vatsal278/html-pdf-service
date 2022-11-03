@@ -6,9 +6,9 @@ package mock
 
 import (
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	model "github.com/vatsal278/html-pdf-service/internal/model"
 )
 
 // MockDataSource is a mock of DataSource interface.
@@ -34,6 +34,35 @@ func (m *MockDataSource) EXPECT() *MockDataSourceMockRecorder {
 	return m.recorder
 }
 
+// DeleteFile mocks base method.
+func (m *MockDataSource) DeleteFile(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFile", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFile indicates an expected call of DeleteFile.
+func (mr *MockDataSourceMockRecorder) DeleteFile(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFile", reflect.TypeOf((*MockDataSource)(nil).DeleteFile), arg0)
+}
+
+// GetFile mocks base method.
+func (m *MockDataSource) GetFile(arg0 string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFile", arg0)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFile indicates an expected call of GetFile.
+func (mr *MockDataSourceMockRecorder) GetFile(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockDataSource)(nil).GetFile), arg0)
+}
+
 // HealthCheck mocks base method.
 func (m *MockDataSource) HealthCheck() bool {
 	m.ctrl.T.Helper()
@@ -48,17 +77,16 @@ func (mr *MockDataSourceMockRecorder) HealthCheck() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HealthCheck", reflect.TypeOf((*MockDataSource)(nil).HealthCheck))
 }
 
-// Ping mocks base method.
-func (m *MockDataSource) Ping(arg0 *model.PingDs) (*model.DsResponse, error) {
+// SaveFile mocks base method.
+func (m *MockDataSource) SaveFile(arg0 string, arg1 interface{}, arg2 time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", arg0)
-	ret0, _ := ret[0].(*model.DsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "SaveFile", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// Ping indicates an expected call of Ping.
-func (mr *MockDataSourceMockRecorder) Ping(arg0 interface{}) *gomock.Call {
+// SaveFile indicates an expected call of SaveFile.
+func (mr *MockDataSourceMockRecorder) SaveFile(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDataSource)(nil).Ping), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveFile", reflect.TypeOf((*MockDataSource)(nil).SaveFile), arg0, arg1, arg2)
 }
