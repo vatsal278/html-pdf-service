@@ -90,6 +90,26 @@ func Test_Register(t *testing.T) {
 			},
 		},
 		{
+			name: "Failure:: Register:: ReadAll",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Length", "1")
+					response.ToJson(w, http.StatusCreated, "SUCCESS", map[string]interface{}{
+						"id": "1",
+					})
+				})
+				return svr
+			},
+			ValidateFunc: func(id string, err error) {
+				if err.Error() != errors.New("unexpected EOF").Error() {
+					t.Errorf("Want: %v, Got: %v", "unexpected EOF", err.Error())
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
 			name: "Failure :: Register :: id not found in response",
 			setupFunc: func() *httptest.Server {
 				svr := testServer("/v1/register", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +280,7 @@ func Test_Replace(t *testing.T) {
 					if !reflect.DeepEqual(x[0], "multipart/form-data") {
 						t.Errorf("Want: %v, Got: %v", "multipart/form-data", x[0])
 					}
+					w.Header().Set("Content-Length", "100")
 					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
 						"id": id,
 					})
@@ -267,8 +288,8 @@ func Test_Replace(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if err != nil {
-					t.Errorf("Want: %v, Got: %v", nil, err)
+				if err.Error() != errors.New("unexpected EOF").Error() {
+					t.Errorf("Want: %v, Got: %v", "unexpected EOF", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -343,6 +364,27 @@ func Test_Replace(t *testing.T) {
 			ValidateFunc: func(err error) {
 				if err.Error() != "non success status code received : 404" {
 					t.Errorf("Want: %v, Got: %v", "non success status code received : 404", err.Error())
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: Replace:: ReadAll",
+			id:   "1",
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/register/{id}", http.MethodPut, func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Length", "100")
+					response.ToJson(w, http.StatusOK, "SUCCESS", map[string]interface{}{
+						"id": "id",
+					})
+				})
+				return svr
+			},
+			ValidateFunc: func(err error) {
+				if err.Error() != errors.New("unexpected EOF").Error() {
+					t.Errorf("Want: %v, Got: %v", "unexpected EOF", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
@@ -478,6 +520,26 @@ func Test_GeneratePdf(t *testing.T) {
 						Message: "",
 						Data:    nil,
 					}, tempResp)
+				}
+			},
+			cleanupFunc: func(svr *httptest.Server) {
+				svr.Close()
+			},
+		},
+		{
+			name: "Failure:: GeneratePdf:: ReadAll",
+			id:   "1",
+			data: map[string]interface{}{"id": "1"},
+			setupFunc: func() *httptest.Server {
+				svr := testServer("/v1/generate/{id}", http.MethodPost, func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Length", "1")
+					response.ToJson(w, http.StatusOK, "", nil)
+				})
+				return svr
+			},
+			ValidateFunc: func(b []byte, err error) {
+				if err.Error() != errors.New("unexpected EOF").Error() {
+					t.Errorf("Want: %v, Got: %v", "unexpected EOF", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
