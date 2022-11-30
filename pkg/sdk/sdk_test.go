@@ -288,8 +288,8 @@ func Test_Replace(t *testing.T) {
 				return svr
 			},
 			ValidateFunc: func(err error) {
-				if err != nil {
-					t.Errorf("Want: %v, Got: %v", nil, err)
+				if err.Error() != errors.New("unexpected EOF").Error() {
+					t.Errorf("Want: %v, Got: %v", "unexpected EOF", err.Error())
 				}
 			},
 			cleanupFunc: func(svr *httptest.Server) {
