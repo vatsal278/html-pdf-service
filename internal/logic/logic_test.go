@@ -362,7 +362,6 @@ func Test_HtmlToPdf(t *testing.T) {
 					t.Errorf("unable to encode data")
 				}
 				mockHtmlsvc := mock.NewMockHtmlToPdf(mockCtrl)
-				t.Log(string(buff.Bytes()))
 				mockHtmlsvc.EXPECT().GeneratePdf(gomock.Any(), gomock.Any()).Return(nil).Times(1).DoAndReturn(func(_ io.Writer, b []byte) error {
 					t.Log(string(b))
 					type Pages struct {
