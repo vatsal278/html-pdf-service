@@ -27,6 +27,7 @@ func NewHtmlToPdfSvc(url string) HtmlToPdfSvcI {
 	}
 }
 
+//go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_sdk.go --package=mock github.com/vatsal278/html-pdf-service/pkg/sdk HtmlToPdfSvcI
 type HtmlToPdfSvcI interface {
 	Register([]byte) (string, error)
 	Replace([]byte, string) error
